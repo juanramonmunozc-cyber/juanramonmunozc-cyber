@@ -45,8 +45,16 @@
            
             marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
             marker.on('dblclick', function() {
-                map.removeLayer(marker); // elimina el marcador del mapa
+                marker.closePopup(); // cerrar popup
+                map.removeLayer(marker);
             });
+
+            // Alternativa: eliminar marcador al hacer clic derecho
+            marker.on('contextmenu', function() {
+                marker.closePopup(); // cerrar popup
+                map.removeLayer(marker);
+            });
+        
             
         });
         
