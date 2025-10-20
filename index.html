@@ -37,22 +37,34 @@
         function addMarker(lat, lng) {
             const marker = L.marker([lat, lng]).addTo(map);
 
+            // Mostrar popup con coordenadas
             marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
 
-            // Mantener presionado 2 segundos para eliminar
+            // Detectar mantener presionado para eliminar (PC y móvil)
             let pressTimer;
+
+            // Para PC
             marker.on('mousedown', function(e) {
                 pressTimer = setTimeout(() => {
                     map.removeLayer(marker);
-                }, 2000); // 2000ms = 2 segundos
+                }, 2000); // 2 segundos
+            });
+            marker.on('mouseup mouseleave', function(e) {
+                clearTimeout(pressTimer);
             });
 
-            marker.on('mouseup mouseleave', function(e) {
+            // Para móviles (touch)
+            marker.on('touchstart', function(e) {
+                pressTimer = setTimeout(() => {
+                    map.removeLayer(marker);
+                }, 2000);
+            });
+            marker.on('touchend touchcancel', function(e) {
                 clearTimeout(pressTimer);
             });
         }
 
-        // Evento clic en el mapa
+        // Evento clic / toque en el mapa
         map.on('click', function(event) {
             const { lat, lng } = event.latlng;
 
