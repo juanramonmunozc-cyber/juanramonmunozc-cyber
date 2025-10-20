@@ -7,6 +7,7 @@
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
   <style>
     #map { height: 500px; width: 100%; border: 2px solid #333; margin-top: 20px; }
     #comment-section { display: none; max-width: 600px; margin-top: 20px; border: 2px solid #333; padding: 10px; }
@@ -61,8 +62,12 @@
       const latKey = lat.toFixed(3);
       const lngKey = lng.toFixed(3);
       const path = `reportes/${latKey}_${lngKey}`;
-      database.ref(path).transaction(current => (current || 0) + 1);
 
+      // Solo actualizar Firebase
+      const ref = database.ref(path);
+      ref.transaction(current => (current || 0) + 1);
+
+      // Abrir Google Form
       const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // reemplaza con tu enlace
       window.open(googleFormUrl, "_blank");
     });
@@ -99,14 +104,11 @@
             color, fillColor: color, fillOpacity: 0.6, radius: 50
           }).addTo(map).bindPopup(`Reportes: ${count}`);
 
+          // Click para abrir comentarios
           marker.on('click', function(){
             document.getElementById('comment-section').style.display = 'block';
             window.selectedMarkerId = key;
             loadComments(key);
-          });
-
-          marker.on('mousedown', function(e){
-            if(e.originalEvent.button === 1) map.removeLayer(marker);
           });
 
           firebaseMarkers[key] = marker;
@@ -119,7 +121,7 @@
       const commentsList = document.getElementById('comments-list');
       commentsList.innerHTML = "";
 
-      const markerCommentsRef = firebase.database().ref(`comentarios/${markerId}`);
+      const markerCommentsRef = database.ref(`comentarios/${markerId}`);
       markerCommentsRef.on('value', snapshot => {
         commentsList.innerHTML = "";
         const data = snapshot.val();
