@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CESPT - Atención Ciudadana</title>
 
+    <!-- Estilos de Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
     <style>
-   
         #map {
             height: 500px;
             width: 100%;
@@ -20,44 +20,38 @@
 <body>
     <h1>CESPT</h1>
     <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
-    
+
     <div id="map"></div>
 
-
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
     <script>
-       
-        const map = L.map('map').setView([32.533, -117.033], 12); 
+        // Crear el mapa centrado en Tijuana
+        const map = L.map('map').setView([32.533, -117.033], 12);
 
-     
+        // Cargar los tiles de OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-      
+        // Evento al hacer clic en el mapa
         map.on('click', function(event) {
-            const { lat, lng } = event.latlng; 
+            const { lat, lng } = event.latlng;
 
-           
+            // Crear el marcador
             const marker = L.marker([lat, lng]).addTo(map);
 
-           
+            // Mostrar popup con coordenadas
             marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
-            marker.on('dblclick', function() {
-                marker.closePopup(); // cerrar popup
-                map.removeLayer(marker);
-            });
 
-            // Alternativa: eliminar marcador al hacer clic derecho
-            marker.on('contextmenu', function() {
-                marker.closePopup(); // cerrar popup
-                map.removeLayer(marker);
+            // Eliminar marcador al usar el botón del medio del ratón
+            marker.on('mousedown', function(e) {
+                if (e.originalEvent.button === 1) { // 1 = botón central
+                    marker.closePopup();
+                    map.removeLayer(marker);
+                }
             });
-        
-            
         });
-        
     </script>
 </body>
 </html>
+
