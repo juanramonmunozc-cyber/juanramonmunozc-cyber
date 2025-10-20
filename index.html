@@ -36,7 +36,7 @@
 
   <script>
     // ====== FIREBASE ======
-   const firebaseConfig = {
+ const firebaseConfig = {
     apiKey: "AIzaSyCQLEfyA2JBRHLIzz6ekLV7F1chQjx1HvY",
     authDomain: "mapa-cespt.firebaseapp.com",
      databaseURL: "https://mapa-cespt-default-rtdb.firebaseio.com",
@@ -54,39 +54,6 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
-
-    // ====== CLICK SIMPLE / LONG PRESS ======
-    map.on('mousedown', function(event) {
-        const { lat, lng } = event.latlng;
-        const latKey = lat.toFixed(3);
-        const lngKey = lng.toFixed(3);
-        const path = `reportes/${latKey}_${lngKey}`;
-        const ref = database.ref(path);
-
-        let longPress = false;
-
-        const pressTimer = setTimeout(() => {
-            longPress = true;
-            ref.remove(); // eliminar marcador
-        }, 1000); // mantener presionado 1 segundo
-
-        map.once('mouseup', () => {
-            clearTimeout(pressTimer);
-            if (!longPress) {
-                // clic normal: agregar marcador
-                ref.transaction(current => (current || 0) + 1);
-
-                // dibujar marcador localmente
-                let color = "yellow";
-                const marker = L.circle([lat, lng], {
-                    color, fillColor: color, fillOpacity: 0.6, radius: 50
-                }).addTo(map);
-
-                const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18";
-                window.open(googleFormUrl, "_blank");
-            }
-        });
-    });
 
     // ====== MARCADORES ======
     let firebaseMarkers = {};
@@ -130,6 +97,33 @@
                 firebaseMarkers[key] = marker;
             }
         });
+    });
+
+    // ====== AGREGAR / ELIMINAR PUNTOS ======
+    // Clic izquierdo = agregar
+    map.on('click', function(event){
+        const { lat, lng } = event.latlng;
+        const latKey = lat.toFixed(3);
+        const lngKey = lng.toFixed(3);
+        const path = `reportes/${latKey}_${lngKey}`;
+        const ref = database.ref(path);
+
+        // Actualizar Firebase
+        ref.transaction(current => (current || 0) + 1);
+
+        // Abrir Google Form
+        const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18";
+        window.open(googleFormUrl, "_blank");
+    });
+
+    // Clic derecho = eliminar
+    map.on('contextmenu', function(event){
+        const { lat, lng } = event.latlng;
+        const latKey = lat.toFixed(3);
+        const lngKey = lng.toFixed(3);
+        const path = `reportes/${latKey}_${lngKey}`;
+        const ref = database.ref(path);
+        ref.remove();
     });
 
     // ====== COMENTARIOS ======
