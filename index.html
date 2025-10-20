@@ -1,160 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CESPT - Atención Ciudadana</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CESPT - Atención Ciudadana</title>
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
-    #map { height: 500px; width: 100%; border: 2px solid #333; margin-top: 20px; }
-    #comment-section { display: none; max-width: 600px; margin-top: 20px; border: 2px solid #333; padding: 10px; }
-    #comments-list { max-height: 200px; overflow-y: auto; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-    .comment { border-bottom: 1px solid #eee; padding: 5px 0; }
-  </style>
+    <!-- Estilos de Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+            margin-top: 20px;
+            border: 2px solid #333;
+        }
+    </style>
 </head>
 <body>
-  <h1>CESPT</h1>
-  <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
+    <h1>CESPT</h1>
+    <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
 
-  <div id="map"></div>
+    <div id="map"></div>
 
-  <h2>Comentarios sobre el reporte seleccionado</h2>
-  <div id="comment-section">
-    <div id="comments-list"></div>
-    <textarea id="comment-input" rows="4" placeholder="Escribe tu comentario..."></textarea>
-    <button id="submit-comment">Enviar</button>
-  </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Crear el mapa centrado en Tijuana
+        const map = L.map('map').setView([32.533, -117.033], 12);
 
-  <script>
-    // ====== FIREBASE ======
- const firebaseConfig = {
-    apiKey: "AIzaSyCQLEfyA2JBRHLIzz6ekLV7F1chQjx1HvY",
-    authDomain: "mapa-cespt.firebaseapp.com",
-     databaseURL: "https://mapa-cespt-default-rtdb.firebaseio.com",
-    projectId: "mapa-cespt",
-    storageBucket: "mapa-cespt.firebasestorage.app",
-     messagingSenderId: "1012901902805",
-     appId: "1:1012901902805:web:3c44ec88c586ad72ee255c",
-     measurementId: "G-YGLLR8PKDW"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+        // Cargar los tiles de OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
 
-    // ====== MAPA ======
-    const map = L.map('map').setView([32.533, -117.033], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+        // Función para agregar un marcador
+        function addMarker(lat, lng) {
+            const marker = L.marker([lat, lng]).addTo(map);
 
-    // ====== MARCADORES ======
-    let firebaseMarkers = {};
+            marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
 
-    const reportesRef = database.ref('reportes');
-    reportesRef.on('value', snapshot => {
-        const data = snapshot.val() || {};
+            // Mantener presionado 2 segundos para eliminar
+            let pressTimer;
+            marker.on('mousedown', function(e) {
+                pressTimer = setTimeout(() => {
+                    map.removeLayer(marker);
+                }, 2000); // 2000ms = 2 segundos
+            });
 
-        // eliminar marcadores que ya no existen
-        Object.keys(firebaseMarkers).forEach(key => {
-            if(!data[key]){
-                map.removeLayer(firebaseMarkers[key]);
-                delete firebaseMarkers[key];
-            }
-        });
-
-        // dibujar o actualizar marcadores
-        Object.keys(data).forEach(key => {
-            const [lat, lng] = key.split('_').map(Number);
-            const count = data[key];
-
-            let color = "yellow";
-            if(count >= 3 && count < 5) color = "orange";
-            else if(count >= 5) color = "red";
-
-            if(firebaseMarkers[key]){
-                firebaseMarkers[key].setStyle({ color, fillColor: color });
-                firebaseMarkers[key].bindPopup(`Reportes: ${count}`);
-            } else {
-                const marker = L.circle([lat, lng], {
-                    color, fillColor: color, fillOpacity: 0.6, radius: 50
-                }).addTo(map).bindPopup(`Reportes: ${count}`);
-
-                // Click para abrir sección de comentarios
-                marker.on('click', function(){
-                    document.getElementById('comment-section').style.display = 'block';
-                    window.selectedMarkerId = key;
-                    loadComments(key);
-                });
-
-                firebaseMarkers[key] = marker;
-            }
-        });
-    });
-
-    // ====== AGREGAR / ELIMINAR PUNTOS ======
-    // Clic izquierdo = agregar
-    map.on('click', function(event){
-        const { lat, lng } = event.latlng;
-        const latKey = lat.toFixed(3);
-        const lngKey = lng.toFixed(3);
-        const path = `reportes/${latKey}_${lngKey}`;
-        const ref = database.ref(path);
-
-        // Actualizar Firebase
-        ref.transaction(current => (current || 0) + 1);
-
-        // Abrir Google Form
-        const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18";
-        window.open(googleFormUrl, "_blank");
-    });
-
-    // Clic derecho = eliminar
-    map.on('contextmenu', function(event){
-        const { lat, lng } = event.latlng;
-        const latKey = lat.toFixed(3);
-        const lngKey = lng.toFixed(3);
-        const path = `reportes/${latKey}_${lngKey}`;
-        const ref = database.ref(path);
-        ref.remove();
-    });
-
-    // ====== COMENTARIOS ======
-    function loadComments(markerId){
-        const commentsList = document.getElementById('comments-list');
-        commentsList.innerHTML = "";
-
-        const markerCommentsRef = firebase.database().ref(`comentarios/${markerId}`);
-        markerCommentsRef.on('value', snapshot => {
-            commentsList.innerHTML = "";
-            const data = snapshot.val();
-            if(data){
-                Object.values(data).forEach(c => {
-                    const div = document.createElement('div');
-                    div.className = "comment";
-                    div.textContent = c.text;
-                    commentsList.appendChild(div);
-                });
-            }
-        });
-    }
-
-    document.getElementById('submit-comment').addEventListener('click', () => {
-        const text = document.getElementById('comment-input').value.trim();
-        if(text !== "" && window.selectedMarkerId){
-            const markerCommentsRef = database.ref(`comentarios/${window.selectedMarkerId}`);
-            const newCommentRef = markerCommentsRef.push();
-            newCommentRef.set({ text, timestamp: Date.now() });
-            document.getElementById('comment-input').value = "";
+            marker.on('mouseup mouseleave', function(e) {
+                clearTimeout(pressTimer);
+            });
         }
-    });
-  </script>
+
+        // Evento clic en el mapa
+        map.on('click', function(event) {
+            const { lat, lng } = event.latlng;
+
+            // Agregar marcador
+            addMarker(lat, lng);
+
+            // Abrir Google Form
+            const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // reemplaza con tu enlace real
+            window.open(googleFormUrl, "_blank");
+        });
+    </script>
 </body>
 </html>
