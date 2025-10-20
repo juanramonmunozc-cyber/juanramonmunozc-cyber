@@ -7,7 +7,6 @@
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
   <style>
     #map { height: 500px; width: 100%; border: 2px solid #333; margin-top: 20px; }
     #comment-section { display: none; max-width: 600px; margin-top: 20px; border: 2px solid #333; padding: 10px; }
@@ -23,7 +22,7 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-  <h1>CEsSPT</h1>
+  <h1>CESPT</h1>
   <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
 
   <div id="map"></div>
@@ -58,18 +57,19 @@
 
     // ====== CLICK EN EL MAPA PARA NUEVO REPORTE ======
     map.on('click', function(event){
-      const { lat, lng } = event.latlng;
-      const latKey = lat.toFixed(3);
-      const lngKey = lng.toFixed(3);
-      const path = `reportes/${latKey}_${lngKey}`;
+        const { lat, lng } = event.latlng;
+        const latKey = lat.toFixed(3);
+        const lngKey = lng.toFixed(3);
+        const path = `reportes/${latKey}_${lngKey}`;
 
-      // Solo actualizar Firebase
-      const ref = database.ref(path);
-      ref.transaction(current => (current || 0) + 1);
-
-      // Abrir Google Form
-      const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // reemplaza con tu enlace
-      window.open(googleFormUrl, "_blank");
+        const ref = database.ref(path);
+        ref.transaction(current => (current || 0) + 1, function(error, committed){
+            if(committed){
+                // Abrir Google Form después de actualizar Firebase
+                const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // reemplaza por tu Form
+                window.open(googleFormUrl, "_blank");
+            }
+        });
     });
 
     // ====== MARCADORES ======
@@ -77,73 +77,73 @@
 
     const reportesRef = database.ref('reportes');
     reportesRef.on('value', snapshot => {
-      const data = snapshot.val() || {};
+        const data = snapshot.val() || {};
 
-      // Eliminar marcadores que ya no existen
-      Object.keys(firebaseMarkers).forEach(key => {
-        if(!data[key]){
-          map.removeLayer(firebaseMarkers[key]);
-          delete firebaseMarkers[key];
-        }
-      });
+        // Eliminar marcadores que ya no existen
+        Object.keys(firebaseMarkers).forEach(key => {
+            if(!data[key]){
+                map.removeLayer(firebaseMarkers[key]);
+                delete firebaseMarkers[key];
+            }
+        });
 
-      // Crear o actualizar marcadores
-      Object.keys(data).forEach(key => {
-        const [lat, lng] = key.split('_').map(Number);
-        const count = data[key];
+        // Dibujar o actualizar marcadores
+        Object.keys(data).forEach(key => {
+            const [lat, lng] = key.split('_').map(Number);
+            const count = data[key];
 
-        let color = "yellow";
-        if(count >= 3 && count < 5) color = "orange";
-        else if(count >= 5) color = "red";
+            let color = "yellow";
+            if(count >= 3 && count < 5) color = "orange";
+            else if(count >= 5) color = "red";
 
-        if(firebaseMarkers[key]){
-          firebaseMarkers[key].setStyle({ color, fillColor: color });
-          firebaseMarkers[key].bindPopup(`Reportes: ${count}`);
-        } else {
-          const marker = L.circle([lat, lng], {
-            color, fillColor: color, fillOpacity: 0.6, radius: 50
-          }).addTo(map).bindPopup(`Reportes: ${count}`);
+            if(firebaseMarkers[key]){
+                firebaseMarkers[key].setStyle({ color, fillColor: color });
+                firebaseMarkers[key].bindPopup(`Reportes: ${count}`);
+            } else {
+                const marker = L.circle([lat, lng], {
+                    color, fillColor: color, fillOpacity: 0.6, radius: 50
+                }).addTo(map).bindPopup(`Reportes: ${count}`);
 
-          // Click para abrir comentarios
-          marker.on('click', function(){
-            document.getElementById('comment-section').style.display = 'block';
-            window.selectedMarkerId = key;
-            loadComments(key);
-          });
+                // Click para abrir sección de comentarios
+                marker.on('click', function(){
+                    document.getElementById('comment-section').style.display = 'block';
+                    window.selectedMarkerId = key;
+                    loadComments(key);
+                });
 
-          firebaseMarkers[key] = marker;
-        }
-      });
+                firebaseMarkers[key] = marker;
+            }
+        });
     });
 
     // ====== COMENTARIOS ======
     function loadComments(markerId){
-      const commentsList = document.getElementById('comments-list');
-      commentsList.innerHTML = "";
-
-      const markerCommentsRef = database.ref(`comentarios/${markerId}`);
-      markerCommentsRef.on('value', snapshot => {
+        const commentsList = document.getElementById('comments-list');
         commentsList.innerHTML = "";
-        const data = snapshot.val();
-        if(data){
-          Object.values(data).forEach(c => {
-            const div = document.createElement('div');
-            div.className = "comment";
-            div.textContent = c.text;
-            commentsList.appendChild(div);
-          });
-        }
-      });
+
+        const markerCommentsRef = firebase.database().ref(`comentarios/${markerId}`);
+        markerCommentsRef.on('value', snapshot => {
+            commentsList.innerHTML = "";
+            const data = snapshot.val();
+            if(data){
+                Object.values(data).forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = "comment";
+                    div.textContent = c.text;
+                    commentsList.appendChild(div);
+                });
+            }
+        });
     }
 
     document.getElementById('submit-comment').addEventListener('click', () => {
-      const text = document.getElementById('comment-input').value.trim();
-      if(text !== "" && window.selectedMarkerId){
-        const markerCommentsRef = database.ref(`comentarios/${window.selectedMarkerId}`);
-        const newCommentRef = markerCommentsRef.push();
-        newCommentRef.set({ text, timestamp: Date.now() });
-        document.getElementById('comment-input').value = "";
-      }
+        const text = document.getElementById('comment-input').value.trim();
+        if(text !== "" && window.selectedMarkerId){
+            const markerCommentsRef = database.ref(`comentarios/${window.selectedMarkerId}`);
+            const newCommentRef = markerCommentsRef.push();
+            newCommentRef.set({ text, timestamp: Date.now() });
+            document.getElementById('comment-input').value = "";
+        }
     });
   </script>
 </body>
