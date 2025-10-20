@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CESPT - Atención Ciudadana</title>
 
-    <!-- Estilos de Leaflet -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
     <style>
@@ -15,7 +15,30 @@
             margin-top: 20px;
             border: 2px solid #333;
         }
+        #comment-section {
+            border: 2px solid #333;
+            padding: 10px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+            display: none; /* oculto hasta seleccionar marcador */
+        }
+        #comments-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        .comment {
+            border-bottom: 1px solid #eee;
+            padding: 5px 0;
+        }
     </style>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <h1>CESPT</h1>
@@ -23,37 +46,133 @@
 
     <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script>
-        // Crear el mapa centrado en Tijuana
-        const map = L.map('map').setView([32.533, -117.033], 12);
+    <h2>Comentarios sobre el reporte seleccionado</h2>
+    <div id="comment-section">
+        <div id="comments-list"></div>
+        <textarea id="comment-input" rows="4" placeholder="Escribe tu comentario..."></textarea>
+        <button id="submit-comment">Enviar</button>
+    </div>
 
-        // Cargar los tiles de OpenStreetMap
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // ====== CONFIGURA AQUÍ TU FIREBASE ======
+        const firebaseConfig = {
+        apiKey: "AIzaSyCQLEfyA2JBRHLIzz6ekLV7F1chQjx1HvY",
+        authDomain: "mapa-cespt.firebaseapp.com",
+         databaseURL: "https://mapa-cespt-default-rtdb.firebaseio.com",
+        projectId: "mapa-cespt",
+         storageBucket: "mapa-cespt.firebasestorage.app",
+         messagingSenderId: "1012901902805",
+         appId: "1:1012901902805:web:3c44ec88c586ad72ee255c",
+        measurementId: "G-YGLLR8PKDW"
+         };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ====== MAPA ======
+        const map = L.map('map').setView([32.533, -117.033], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Evento al hacer clic en el mapa
+        // ====== CLICK EN EL MAPA PARA NUEVO REPORTE ======
         map.on('click', function(event) {
             const { lat, lng } = event.latlng;
 
-            // Crear el marcador
-            const marker = L.marker([lat, lng]).addTo(map);
-        const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // reemplaza con tu enlace real
-            window.open(googleFormUrl, "_blank");
-            // Mostrar popup con coordenadas
-            marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
+            // Redondear coordenadas para agrupar reportes cercanos
+            const latKey = lat.toFixed(3);
+            const lngKey = lng.toFixed(3);
+            const path = `reportes/${latKey}_${lngKey}`;
 
-            // Eliminar marcador al usar el botón del medio del ratón
-            marker.on('mousedown', function(e) {
-                if (e.originalEvent.button === 1) { // 1 = botón central
-                    marker.closePopup();
-                    map.removeLayer(marker);
+            // Aumentar contador en Firebase
+            const ref = database.ref(path);
+            ref.transaction(current => (current || 0) + 1);
+
+            // Abrir Google Form
+            const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // reemplaza con tu enlace real
+            window.open(googleFormUrl, "_blank");
+        });
+
+        // ====== LEER REPORTES Y DIBUJAR ======
+        const reportesRef = database.ref('reportes');
+        reportesRef.on('value', snapshot => {
+            // Limpiar marcadores antiguos
+            map.eachLayer(layer => {
+                if(layer.options && layer.options.pane === "markerPane") {
+                    map.removeLayer(layer);
                 }
             });
+
+            const data = snapshot.val();
+            if(data){
+                Object.keys(data).forEach(key => {
+                    const [lat, lng] = key.split('_').map(Number);
+                    const count = data[key];
+
+                    let color = "yellow";
+                    if(count >= 3 && count < 5) color = "orange";
+                    else if(count >= 5) color = "red";
+
+                    const marker = L.circle([lat, lng], {
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.6,
+                        radius: 50
+                    }).addTo(map)
+                      .bindPopup(`Reportes: ${count}`);
+
+                    // Mostrar sección de comentarios al hacer clic
+                    marker.on('click', function() {
+                        document.getElementById('comment-section').style.display = 'block';
+                        window.selectedMarkerId = key;
+                        loadComments(key);
+                    });
+
+                    // Eliminar marcador con botón central del ratón
+                    marker.on('mousedown', function(e) {
+                        if(e.originalEvent.button === 1) {
+                            map.removeLayer(marker);
+                        }
+                    });
+                });
+            }
+        });
+
+        // ====== FUNCIONES DE COMENTARIOS ======
+        function loadComments(markerId){
+            const commentsList = document.getElementById('comments-list');
+            commentsList.innerHTML = "";
+
+            const markerCommentsRef = firebase.database().ref(`comentarios/${markerId}`);
+            markerCommentsRef.on('value', snapshot => {
+                commentsList.innerHTML = "";
+                const data = snapshot.val();
+                if(data){
+                    Object.values(data).forEach(c => {
+                        const div = document.createElement('div');
+                        div.className = "comment";
+                        div.textContent = c.text;
+                        commentsList.appendChild(div);
+                    });
+                }
+            });
+        }
+
+        document.getElementById('submit-comment').addEventListener('click', () => {
+            const text = document.getElementById('comment-input').value.trim();
+            if(text !== "" && window.selectedMarkerId){
+                const markerCommentsRef = firebase.database().ref(`comentarios/${window.selectedMarkerId}`);
+                const newCommentRef = markerCommentsRef.push();
+                newCommentRef.set({
+                    text: text,
+                    timestamp: Date.now()
+                });
+                document.getElementById('comment-input').value = "";
+            }
         });
     </script>
 </body>
 </html>
-Actualizar mapa y Google Form
 
