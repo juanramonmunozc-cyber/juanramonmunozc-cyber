@@ -22,7 +22,7 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-  <h1>CEsSPT</h1>
+  <h1>CESPT</h1>
   <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
 
   <div id="map"></div>
@@ -36,7 +36,7 @@
 
   <script>
     // ====== FIREBASE ======
- const firebaseConfig = {
+   const firebaseConfig = {
     apiKey: "AIzaSyCQLEfyA2JBRHLIzz6ekLV7F1chQjx1HvY",
     authDomain: "mapa-cespt.firebaseapp.com",
      databaseURL: "https://mapa-cespt-default-rtdb.firebaseio.com",
@@ -55,7 +55,7 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // ====== CLICK / LONG PRESS ======
+    // ====== CLICK SIMPLE / LONG PRESS ======
     map.on('mousedown', function(event) {
         const { lat, lng } = event.latlng;
         const latKey = lat.toFixed(3);
@@ -63,22 +63,28 @@
         const path = `reportes/${latKey}_${lngKey}`;
         const ref = database.ref(path);
 
-        let pressTimer;
+        let longPress = false;
 
-        // Mantener presionado = eliminar
-        pressTimer = setTimeout(() => {
-            ref.remove();
-        }, 1000); // 1 segundo
+        const pressTimer = setTimeout(() => {
+            longPress = true;
+            ref.remove(); // eliminar marcador
+        }, 1000); // mantener presionado 1 segundo
 
-        // Suelta antes de 1 segundo = clic normal
         map.once('mouseup', () => {
             clearTimeout(pressTimer);
-            ref.transaction(current => (current || 0) + 1, function(error, committed){
-                if(committed){
-                    const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // tu Form
-                    window.open(googleFormUrl, "_blank");
-                }
-            });
+            if (!longPress) {
+                // clic normal: agregar marcador
+                ref.transaction(current => (current || 0) + 1);
+
+                // dibujar marcador localmente
+                let color = "yellow";
+                const marker = L.circle([lat, lng], {
+                    color, fillColor: color, fillOpacity: 0.6, radius: 50
+                }).addTo(map);
+
+                const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18";
+                window.open(googleFormUrl, "_blank");
+            }
         });
     });
 
@@ -89,7 +95,7 @@
     reportesRef.on('value', snapshot => {
         const data = snapshot.val() || {};
 
-        // Eliminar marcadores que ya no existen
+        // eliminar marcadores que ya no existen
         Object.keys(firebaseMarkers).forEach(key => {
             if(!data[key]){
                 map.removeLayer(firebaseMarkers[key]);
@@ -97,7 +103,7 @@
             }
         });
 
-        // Dibujar o actualizar marcadores
+        // dibujar o actualizar marcadores
         Object.keys(data).forEach(key => {
             const [lat, lng] = key.split('_').map(Number);
             const count = data[key];
@@ -158,4 +164,3 @@
   </script>
 </body>
 </html>
-
