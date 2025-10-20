@@ -36,7 +36,7 @@
 
   <script>
     // ====== FIREBASE ======
-    const firebaseConfig = {
+ const firebaseConfig = {
     apiKey: "AIzaSyCQLEfyA2JBRHLIzz6ekLV7F1chQjx1HvY",
     authDomain: "mapa-cespt.firebaseapp.com",
      databaseURL: "https://mapa-cespt-default-rtdb.firebaseio.com",
@@ -55,20 +55,30 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // ====== CLICK EN EL MAPA PARA NUEVO REPORTE ======
-    map.on('click', function(event){
+    // ====== CLICK / LONG PRESS ======
+    map.on('mousedown', function(event) {
         const { lat, lng } = event.latlng;
         const latKey = lat.toFixed(3);
         const lngKey = lng.toFixed(3);
         const path = `reportes/${latKey}_${lngKey}`;
-
         const ref = database.ref(path);
-        ref.transaction(current => (current || 0) + 1, function(error, committed){
-            if(committed){
-                // Abrir Google Form después de actualizar Firebase
-                const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // reemplaza por tu Form
-                window.open(googleFormUrl, "_blank");
-            }
+
+        let pressTimer;
+
+        // Mantener presionado = eliminar
+        pressTimer = setTimeout(() => {
+            ref.remove();
+        }, 1000); // 1 segundo
+
+        // Suelta antes de 1 segundo = clic normal
+        map.once('mouseup', () => {
+            clearTimeout(pressTimer);
+            ref.transaction(current => (current || 0) + 1, function(error, committed){
+                if(committed){
+                    const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // tu Form
+                    window.open(googleFormUrl, "_blank");
+                }
+            });
         });
     });
 
@@ -148,3 +158,4 @@
   </script>
 </body>
 </html>
+
