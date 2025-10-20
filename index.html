@@ -21,7 +21,7 @@
             margin-top: 20px;
             width: 100%;
             max-width: 600px;
-            display: none; /* oculto hasta seleccionar marcador */
+            display: none;
         }
         #comments-list {
             max-height: 200px;
@@ -41,7 +41,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
-    <h1>CESPT</h1>
+    <h1>CESsPT</h1>
     <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
 
     <div id="map"></div>
@@ -79,8 +79,6 @@
         // ====== CLICK EN EL MAPA PARA NUEVO REPORTE ======
         map.on('click', function(event) {
             const { lat, lng } = event.latlng;
-
-            // Redondear coordenadas para agrupar reportes cercanos
             const latKey = lat.toFixed(3);
             const lngKey = lng.toFixed(3);
             const path = `reportes/${latKey}_${lngKey}`;
@@ -95,52 +93,62 @@
         });
 
         // ====== LEER REPORTES Y DIBUJAR ======
-        let firebaseMarkers = []; // almacenará los círculos de Firebase
+        let firebaseMarkers = {}; // almacenar marcadores por ID
 
         const reportesRef = database.ref('reportes');
         reportesRef.on('value', snapshot => {
-            // Eliminar solo los círculos antiguos
-            firebaseMarkers.forEach(marker => map.removeLayer(marker));
-            firebaseMarkers = [];
+            const data = snapshot.val() || {};
 
-            const data = snapshot.val();
-            if(data){
-                Object.keys(data).forEach(key => {
-                    const [lat, lng] = key.split('_').map(Number);
-                    const count = data[key];
+            // Eliminar marcadores que ya no existen
+            Object.keys(firebaseMarkers).forEach(key => {
+                if(!data[key]){
+                    map.removeLayer(firebaseMarkers[key]);
+                    delete firebaseMarkers[key];
+                }
+            });
 
-                    let color = "yellow";
-                    if(count >= 3 && count < 5) color = "orange";
-                    else if(count >= 5) color = "red";
+            // Crear o actualizar marcadores
+            Object.keys(data).forEach(key => {
+                const [lat, lng] = key.split('_').map(Number);
+                const count = data[key];
 
+                let color = "yellow";
+                if(count >= 3 && count < 5) color = "orange";
+                else if(count >= 5) color = "red";
+
+                if(firebaseMarkers[key]){
+                    // Actualizar color y popup
+                    firebaseMarkers[key].setStyle({ color, fillColor: color });
+                    firebaseMarkers[key].bindPopup(`Reportes: ${count}`);
+                } else {
+                    // Nuevo marcador
                     const marker = L.circle([lat, lng], {
                         color: color,
                         fillColor: color,
                         fillOpacity: 0.6,
                         radius: 50
-                    }).addTo(map)
-                      .bindPopup(`Reportes: ${count}`);
+                    }).addTo(map).bindPopup(`Reportes: ${count}`);
 
-                    firebaseMarkers.push(marker); // guardar en array
-
-                    // Mostrar sección de comentarios al hacer clic
+                    // Click para abrir comentarios
                     marker.on('click', function() {
                         document.getElementById('comment-section').style.display = 'block';
                         window.selectedMarkerId = key;
                         loadComments(key);
                     });
 
-                    // Eliminar marcador con botón central del ratón
+                    // Botón central para eliminar marcador
                     marker.on('mousedown', function(e) {
-                        if(e.originalEvent.button === 1) {
+                        if(e.originalEvent.button === 1){
                             map.removeLayer(marker);
                         }
                     });
-                });
-            }
+
+                    firebaseMarkers[key] = marker;
+                }
+            });
         });
 
-        // ====== FUNCIONES DE COMENTARIOS ======
+        // ====== COMENTARIOS ======
         function loadComments(markerId){
             const commentsList = document.getElementById('comments-list');
             commentsList.innerHTML = "";
