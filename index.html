@@ -40,31 +40,25 @@
             // Mostrar popup con coordenadas
             marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
 
-            // Detectar mantener presionado para eliminar (PC y móvil)
-            let pressTimer;
-
-            // Para PC
-            marker.on('mousedown', function(e) {
-                pressTimer = setTimeout(() => {
-                    map.removeLayer(marker);
-                }, 2000); // 2 segundos
-            });
-            marker.on('mouseup mouseleave', function(e) {
-                clearTimeout(pressTimer);
+            // Doble clic para eliminar
+            marker.on('dblclick', function(e) {
+                map.removeLayer(marker);
             });
 
-            // Para móviles (touch)
-            marker.on('touchstart', function(e) {
-                pressTimer = setTimeout(() => {
+            // Para móviles, también detectar doble toque
+            let lastTap = 0;
+            marker.on('touchend', function(e) {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                if (tapLength < 400 && tapLength > 0) { // doble toque detectado
                     map.removeLayer(marker);
-                }, 2000);
-            });
-            marker.on('touchend touchcancel', function(e) {
-                clearTimeout(pressTimer);
+                    e.preventDefault();
+                }
+                lastTap = currentTime;
             });
         }
 
-        // Evento clic / toque en el mapa
+        // Evento clic en el mapa para agregar marcador
         map.on('click', function(event) {
             const { lat, lng } = event.latlng;
 
