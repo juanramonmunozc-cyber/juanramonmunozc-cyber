@@ -59,15 +59,14 @@
     <script>
         // ====== CONFIGURA AQUÍ TU FIREBASE ======
         const firebaseConfig = {
-        apiKey: "AIzaSyCQLEfyA2JBRHLIzz6ekLV7F1chQjx1HvY",
-        authDomain: "mapa-cespt.firebaseapp.com",
-         databaseURL: "https://mapa-cespt-default-rtdb.firebaseio.com",
-        projectId: "mapa-cespt",
-         storageBucket: "mapa-cespt.firebasestorage.app",
-         messagingSenderId: "1012901902805",
-         appId: "1:1012901902805:web:3c44ec88c586ad72ee255c",
-        measurementId: "G-YGLLR8PKDW"
-         };
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_AUTH_DOMAIN",
+            databaseURL: "TU_DATABASE_URL",
+            projectId: "TU_PROJECT_ID",
+            storageBucket: "TU_STORAGE_BUCKET",
+            messagingSenderId: "TU_MESSAGING_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
@@ -96,14 +95,13 @@
         });
 
         // ====== LEER REPORTES Y DIBUJAR ======
+        let firebaseMarkers = []; // almacenará los círculos de Firebase
+
         const reportesRef = database.ref('reportes');
         reportesRef.on('value', snapshot => {
-            // Limpiar marcadores antiguos
-            map.eachLayer(layer => {
-                if(layer.options && layer.options.pane === "markerPane") {
-                    map.removeLayer(layer);
-                }
-            });
+            // Eliminar solo los círculos antiguos
+            firebaseMarkers.forEach(marker => map.removeLayer(marker));
+            firebaseMarkers = [];
 
             const data = snapshot.val();
             if(data){
@@ -122,6 +120,8 @@
                         radius: 50
                     }).addTo(map)
                       .bindPopup(`Reportes: ${count}`);
+
+                    firebaseMarkers.push(marker); // guardar en array
 
                     // Mostrar sección de comentarios al hacer clic
                     marker.on('click', function() {
@@ -175,4 +175,3 @@
     </script>
 </body>
 </html>
-
