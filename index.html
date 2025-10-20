@@ -39,7 +39,8 @@
 
             // Crear el marcador
             const marker = L.marker([lat, lng]).addTo(map);
-
+        const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // reemplaza con tu enlace real
+            window.open(googleFormUrl, "_blank");
             // Mostrar popup con coordenadas
             marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
 
