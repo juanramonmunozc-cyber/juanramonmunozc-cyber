@@ -1,11 +1,50 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>CESPT - Atención Ciudadana</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+   
+        #map {
+            height: 500px;
+            width: 100%;
+            margin-top: 20px;
+            border: 2px solid #333;
+        }
+    </style>
 </head>
 <body>
-   <H1>CESPT </H1>  <h2> Modulo de atencion Quejas, ayudas y reportes  </h2> 
+    <h1>CESPT</h1>
+    <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
+    
+    <div id="map"></div>
+
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+       
+        const map = L.map('map').setView([32.533, -117.033], 12); 
+
+     
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+      
+        map.on('click', function(event) {
+            const { lat, lng } = event.latlng; 
+
+           
+            const marker = L.marker([lat, lng]).addTo(map);
+
+           
+            marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
+        });
+    </script>
+</body>
 </html>
