@@ -1,185 +1,148 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CESPT - Atención Ciudadana</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CESPT - Atención Ciudadana</title>
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 500px; width: 100%; border: 2px solid #333; margin-top: 20px; }
+    #comment-section { display: none; max-width: 600px; margin-top: 20px; border: 2px solid #333; padding: 10px; }
+    #comments-list { max-height: 200px; overflow-y: auto; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+    .comment { border-bottom: 1px solid #eee; padding: 5px 0; }
+  </style>
 
-    <style>
-        #map {
-            height: 500px;
-            width: 100%;
-            margin-top: 20px;
-            border: 2px solid #333;
-        }
-        #comment-section {
-            border: 2px solid #333;
-            padding: 10px;
-            margin-top: 20px;
-            width: 100%;
-            max-width: 600px;
-            display: none;
-        }
-        #comments-list {
-            max-height: 200px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
-        }
-        .comment {
-            border-bottom: 1px solid #eee;
-            padding: 5px 0;
-        }
-    </style>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-    <h1>CESsPT</h1>
-    <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
+  <h1>CESPT</h1>
+  <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
 
-    <div id="map"></div>
+  <div id="map"></div>
 
-    <h2>Comentarios sobre el reporte seleccionado</h2>
-    <div id="comment-section">
-        <div id="comments-list"></div>
-        <textarea id="comment-input" rows="4" placeholder="Escribe tu comentario..."></textarea>
-        <button id="submit-comment">Enviar</button>
-    </div>
+  <h2>Comentarios sobre el reporte seleccionado</h2>
+  <div id="comment-section">
+    <div id="comments-list"></div>
+    <textarea id="comment-input" rows="4" placeholder="Escribe tu comentario..."></textarea>
+    <button id="submit-comment">Enviar</button>
+  </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // ====== FIREBASE ======
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_AUTH_DOMAIN",
+      databaseURL: "TU_DATABASE_URL",
+      projectId: "TU_PROJECT_ID",
+      storageBucket: "TU_STORAGE_BUCKET",
+      messagingSenderId: "TU_MESSAGING_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
 
-    <script>
-        // ====== CONFIGURA AQUÍ TU FIREBASE ======
-        const firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "TU_AUTH_DOMAIN",
-            databaseURL: "TU_DATABASE_URL",
-            projectId: "TU_PROJECT_ID",
-            storageBucket: "TU_STORAGE_BUCKET",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID",
-            appId: "TU_APP_ID"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+    // ====== MAPA ======
+    const map = L.map('map').setView([32.533, -117.033], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-        // ====== MAPA ======
-        const map = L.map('map').setView([32.533, -117.033], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+    // ====== CLICK EN EL MAPA PARA NUEVO REPORTE ======
+    map.on('click', function(event){
+      const { lat, lng } = event.latlng;
+      const latKey = lat.toFixed(3);
+      const lngKey = lng.toFixed(3);
+      const path = `reportes/${latKey}_${lngKey}`;
+      database.ref(path).transaction(current => (current || 0) + 1);
 
-        // ====== CLICK EN EL MAPA PARA NUEVO REPORTE ======
-        map.on('click', function(event) {
-            const { lat, lng } = event.latlng;
-            const latKey = lat.toFixed(3);
-            const lngKey = lng.toFixed(3);
-            const path = `reportes/${latKey}_${lngKey}`;
+      const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // reemplaza con tu enlace
+      window.open(googleFormUrl, "_blank");
+    });
 
-            // Aumentar contador en Firebase
-            const ref = database.ref(path);
-            ref.transaction(current => (current || 0) + 1);
+    // ====== MARCADORES ======
+    let firebaseMarkers = {};
 
-            // Abrir Google Form
-            const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18"; // reemplaza con tu enlace real
-            window.open(googleFormUrl, "_blank");
-        });
+    const reportesRef = database.ref('reportes');
+    reportesRef.on('value', snapshot => {
+      const data = snapshot.val() || {};
 
-        // ====== LEER REPORTES Y DIBUJAR ======
-        let firebaseMarkers = {}; // almacenar marcadores por ID
-
-        const reportesRef = database.ref('reportes');
-        reportesRef.on('value', snapshot => {
-            const data = snapshot.val() || {};
-
-            // Eliminar marcadores que ya no existen
-            Object.keys(firebaseMarkers).forEach(key => {
-                if(!data[key]){
-                    map.removeLayer(firebaseMarkers[key]);
-                    delete firebaseMarkers[key];
-                }
-            });
-
-            // Crear o actualizar marcadores
-            Object.keys(data).forEach(key => {
-                const [lat, lng] = key.split('_').map(Number);
-                const count = data[key];
-
-                let color = "yellow";
-                if(count >= 3 && count < 5) color = "orange";
-                else if(count >= 5) color = "red";
-
-                if(firebaseMarkers[key]){
-                    // Actualizar color y popup
-                    firebaseMarkers[key].setStyle({ color, fillColor: color });
-                    firebaseMarkers[key].bindPopup(`Reportes: ${count}`);
-                } else {
-                    // Nuevo marcador
-                    const marker = L.circle([lat, lng], {
-                        color: color,
-                        fillColor: color,
-                        fillOpacity: 0.6,
-                        radius: 50
-                    }).addTo(map).bindPopup(`Reportes: ${count}`);
-
-                    // Click para abrir comentarios
-                    marker.on('click', function() {
-                        document.getElementById('comment-section').style.display = 'block';
-                        window.selectedMarkerId = key;
-                        loadComments(key);
-                    });
-
-                    // Botón central para eliminar marcador
-                    marker.on('mousedown', function(e) {
-                        if(e.originalEvent.button === 1){
-                            map.removeLayer(marker);
-                        }
-                    });
-
-                    firebaseMarkers[key] = marker;
-                }
-            });
-        });
-
-        // ====== COMENTARIOS ======
-        function loadComments(markerId){
-            const commentsList = document.getElementById('comments-list');
-            commentsList.innerHTML = "";
-
-            const markerCommentsRef = firebase.database().ref(`comentarios/${markerId}`);
-            markerCommentsRef.on('value', snapshot => {
-                commentsList.innerHTML = "";
-                const data = snapshot.val();
-                if(data){
-                    Object.values(data).forEach(c => {
-                        const div = document.createElement('div');
-                        div.className = "comment";
-                        div.textContent = c.text;
-                        commentsList.appendChild(div);
-                    });
-                }
-            });
+      // Eliminar marcadores que ya no existen
+      Object.keys(firebaseMarkers).forEach(key => {
+        if(!data[key]){
+          map.removeLayer(firebaseMarkers[key]);
+          delete firebaseMarkers[key];
         }
+      });
 
-        document.getElementById('submit-comment').addEventListener('click', () => {
-            const text = document.getElementById('comment-input').value.trim();
-            if(text !== "" && window.selectedMarkerId){
-                const markerCommentsRef = firebase.database().ref(`comentarios/${window.selectedMarkerId}`);
-                const newCommentRef = markerCommentsRef.push();
-                newCommentRef.set({
-                    text: text,
-                    timestamp: Date.now()
-                });
-                document.getElementById('comment-input').value = "";
-            }
-        });
-    </script>
+      // Crear o actualizar marcadores
+      Object.keys(data).forEach(key => {
+        const [lat, lng] = key.split('_').map(Number);
+        const count = data[key];
+
+        let color = "yellow";
+        if(count >= 3 && count < 5) color = "orange";
+        else if(count >= 5) color = "red";
+
+        if(firebaseMarkers[key]){
+          firebaseMarkers[key].setStyle({ color, fillColor: color });
+          firebaseMarkers[key].bindPopup(`Reportes: ${count}`);
+        } else {
+          const marker = L.circle([lat, lng], {
+            color, fillColor: color, fillOpacity: 0.6, radius: 50
+          }).addTo(map).bindPopup(`Reportes: ${count}`);
+
+          marker.on('click', function(){
+            document.getElementById('comment-section').style.display = 'block';
+            window.selectedMarkerId = key;
+            loadComments(key);
+          });
+
+          marker.on('mousedown', function(e){
+            if(e.originalEvent.button === 1) map.removeLayer(marker);
+          });
+
+          firebaseMarkers[key] = marker;
+        }
+      });
+    });
+
+    // ====== COMENTARIOS ======
+    function loadComments(markerId){
+      const commentsList = document.getElementById('comments-list');
+      commentsList.innerHTML = "";
+
+      const markerCommentsRef = firebase.database().ref(`comentarios/${markerId}`);
+      markerCommentsRef.on('value', snapshot => {
+        commentsList.innerHTML = "";
+        const data = snapshot.val();
+        if(data){
+          Object.values(data).forEach(c => {
+            const div = document.createElement('div');
+            div.className = "comment";
+            div.textContent = c.text;
+            commentsList.appendChild(div);
+          });
+        }
+      });
+    }
+
+    document.getElementById('submit-comment').addEventListener('click', () => {
+      const text = document.getElementById('comment-input').value.trim();
+      if(text !== "" && window.selectedMarkerId){
+        const markerCommentsRef = database.ref(`comentarios/${window.selectedMarkerId}`);
+        const newCommentRef = markerCommentsRef.push();
+        newCommentRef.set({ text, timestamp: Date.now() });
+        document.getElementById('comment-input').value = "";
+      }
+    });
+  </script>
 </body>
 </html>
+
