@@ -51,30 +51,60 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Función para agregar marcador con ID de Firebase
-    function addMarker(lat, lng, key) {
-      const marker = L.marker([lat, lng]).addTo(map);
-      marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
+    // Función para crear icono de color
+    function createIcon(color) {
+      return L.icon({
+        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+    }
 
-      // Doble clic para eliminar marcador del mapa y Firebase
+    // Función para definir color según cantidad de reportes
+    function getMarkerColor(count) {
+      if (count >= 5) return 'red';
+      if (count >= 3) return 'orange';
+      return 'green';
+    }
+
+    // Función para agregar marcador
+    function addMarker(lat, lng, key, icon) {
+      const marker = L.marker([lat, lng], { icon }).addTo(map);
+      marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
       marker.on('dblclick', () => {
         map.removeLayer(marker);
         db.ref("reportes/" + key).remove();
       });
     }
 
-    // Cargar marcadores desde Firebase
+    // Cargar marcadores desde Firebase y agrupar por ubicación
     db.ref("reportes").on("value", snapshot => {
-      // Quitar marcadores existentes
+      // Eliminar marcadores antiguos
       map.eachLayer(layer => {
         if (layer instanceof L.Marker) map.removeLayer(layer);
       });
 
-      // Dibujar nuevos marcadores
+      // Contar reportes por ubicación
+      const reportCount = {};
+      snapshot.forEach(child => {
+        const data = child.val();
+        const keyCoords = `${data.lat.toFixed(4)},${data.lng.toFixed(4)}`;
+        if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
+        reportCount[keyCoords]++;
+      });
+
+      // Dibujar marcadores con color según cantidad
       snapshot.forEach(child => {
         const data = child.val();
         const key = child.key;
-        addMarker(data.lat, data.lng, key);
+        const keyCoords = `${data.lat.toFixed(4)},${data.lng.toFixed(4)}`;
+        const count = reportCount[keyCoords];
+        const color = getMarkerColor(count);
+        const icon = createIcon(color);
+        addMarker(data.lat, data.lng, key, icon);
       });
     });
 
@@ -82,7 +112,7 @@
     map.on('click', e => {
       const { lat, lng } = e.latlng;
       const newRef = db.ref("reportes").push({ lat, lng });
-      addMarker(lat, lng, newRef.key);
+      addMarker(lat, lng, newRef.key, createIcon('green'));
       window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
     });
   </script>
