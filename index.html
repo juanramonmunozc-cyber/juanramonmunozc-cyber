@@ -27,6 +27,7 @@
       cursor: pointer;
       box-shadow: 0px 4px 6px rgba(0,0,0,0.3);
       font-size: 16px;
+      z-index: 1001;
     }
 
     #btnAgregarQueja:hover {
@@ -98,6 +99,21 @@
       font-size: 20px;
       color: #333;
     }
+
+    #mapMessage {
+      display: none;
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffc107;
+      color: #333;
+      padding: 10px 20px;
+      border-radius: 5px;
+      z-index: 1002;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
   </style>
 </head>
 <body>
@@ -107,6 +123,7 @@
   <div id="map"></div>
   <button id="btnAgregarQueja">Agregar Queja</button>
   <div id="overlay"></div>
+  <div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
 
   <div id="formContainer">
     <span id="closeForm">&times;</span>
@@ -214,6 +231,7 @@
     const closeForm = document.getElementById('closeForm');
     const formQueja = document.getElementById('formQueja');
     const btnAgregar = document.getElementById('btnAgregarQueja');
+    const mapMessage = document.getElementById('mapMessage');
 
     btnAgregar.addEventListener('click', () => {
       overlay.style.display = 'block';
@@ -225,12 +243,20 @@
       formContainer.style.display = 'none';
     });
 
-    // ======= CORRECCIÓN PARA PONER MARCADORES =======
     let colocarMarcadorActivo = false;
+
+    formQueja.addEventListener('submit', (e) => {
+      e.preventDefault();
+      overlay.style.display = 'none';
+      formContainer.style.display = 'none';
+      mapMessage.style.display = 'block'; // muestra mensaje
+      colocarMarcadorActivo = true;
+    });
 
     map.on('click', function(ev){
       if(!colocarMarcadorActivo) return;
       colocarMarcadorActivo = false;
+      mapMessage.style.display = 'none'; // oculta mensaje
 
       const { lat, lng } = ev.latlng;
       const problema = document.getElementById('problema').value;
@@ -243,7 +269,7 @@
           .then(res => res.json())
           .then(data => {
             const street = data.address?.road || 'Calle desconocida';
-            const city = data.address?.city || data.address?.town || 'Tijuana';
+            const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
             const fullStreet = `${street}, ${city}`;
 
             const newRef = db.ref("reportes").push({
@@ -270,14 +296,6 @@
       } else {
         guardarYAgregar();
       }
-    });
-
-    formQueja.addEventListener('submit', (e) => {
-      e.preventDefault();
-      overlay.style.display = 'none';
-      formContainer.style.display = 'none';
-      alert("Haz clic en el mapa para colocar tu queja.");
-      colocarMarcadorActivo = true;
     });
   </script>
 </body>
