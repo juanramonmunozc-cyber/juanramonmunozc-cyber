@@ -202,7 +202,7 @@
 
     function addMarker(lat, lng, key, icon, street, descripcion="", fotoURL="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-      let popupText = `<b>${street}</b><br>${descripcion}`;
+      let popupText = `<b>"Reporte:"${street}</b><br>${descripcion}`;
       if(fotoURL) popupText += `<br><img src="${fotoURL}" style="width:100%; max-width:200px; margin-top:5px; border-radius:8px;">`;
       marker.bindPopup(popupText);
       marker.on('dblclick', () => {
