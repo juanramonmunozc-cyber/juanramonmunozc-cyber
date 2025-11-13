@@ -50,7 +50,7 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Centrar mapa en Tijuana usando Nominatim
+    // Centrar mapa en Tijuana
     fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
       .then(response => response.json())
       .then(data => {
@@ -79,54 +79,27 @@
       });
     }
 
-    // Color según cantidad de reportes
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
       if (count >= 3) return 'orange';
-      return 'green';
+      return 'blue';
     }
 
-    // Redondear coordenadas para agrupar reportes
     function roundCoord(num) {
       return Math.round(num * 1000) / 1000;
     }
 
-    // Obtener dirección con Nominatim
-    function getAddress(lat, lng, callback) {
-      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          const street = data.address?.road || 'Calle desconocida';
-          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
-          const address = `${street}, ${city}`;
-          callback(address);
-        })
-        .catch(err => {
-          console.error('Error al obtener dirección:', err);
-          callback("Calle desconocida, Tijuana");
-        });
-    }
-
-    // Agregar marcador con color y calle
-    function addMarker(lat, lng, key, icon) {
+    // Agregar marcador con calle ya guardada
+    function addMarker(lat, lng, key, icon, street) {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-
-      getAddress(lat, lng, (address) => {
-        marker.bindPopup(`
-          <b>Reporte</b><br>
-          Calle: ${address}
-        `); // ❌ No usamos openPopup para evitar que el mapa se mueva
-      });
-
-      // Doble clic elimina marcador y Firebase
+      marker.bindPopup(`<b>Reporte</b><br>Calle: ${street}`);
       marker.on('dblclick', () => {
         map.removeLayer(marker);
         db.ref("reportes/" + key).remove();
       });
     }
 
-    // Cargar TODOS los marcadores de Firebase al iniciar
+    // Cargar marcadores de Firebase
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
       snapshot.forEach(child => {
@@ -143,20 +116,41 @@
         const count = reportCount[keyCoords];
         const color = getMarkerColor(count);
         const icon = createIcon(color);
-        addMarker(data.lat, data.lng, key, icon);
+
+        // Mostrar la calle guardada en Firebase, si no existe, usar "Calle desconocida"
+        const street = data.street || "Calle desconocida, Tijuana";
+        addMarker(data.lat, data.lng, key, icon, street);
       });
     });
 
-    // Agregar marcador solo si se hace clic sobre mapa vacío
+    // Click en mapa vacío para agregar marcador
     map.on('click', function(e) {
       if (!e.originalEvent.target.classList.contains('leaflet-marker-icon')) {
         const { lat, lng } = e.latlng;
-        const newRef = db.ref("reportes").push({ lat, lng });
-        addMarker(lat, lng, newRef.key, createIcon('green'));
-        window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
+
+        // Obtener calle con Nominatim solo al crear marcador
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+          .then(res => res.json())
+          .then(data => {
+            const street = data.address?.road || 'Calle desconocida';
+            const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+            const fullStreet = `${street}, ${city}`;
+
+            // Guardar en Firebase con la calle
+            const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet });
+            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet);
+
+            // Abrir formulario
+            window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
+          })
+          .catch(err => {
+            console.error(err);
+            const newRef = db.ref("reportes").push({ lat, lng, street: "Calle desconocida, Tijuana" });
+            addMarker(lat, lng, newRef.key, createIcon('blue'), "Calle desconocida, Tijuana");
+            window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
+          });
       }
     });
   </script>
 </body>
 </html>
-
