@@ -30,9 +30,7 @@
       z-index: 1001;
     }
 
-    #btnAgregarQueja:hover {
-      background-color: #0056b3;
-    }
+    #btnAgregarQueja:hover { background-color: #0056b3; }
 
     #overlay {
       display: none;
@@ -57,15 +55,8 @@
     }
 
     #formContainer h3 { margin-top: 0; }
-
-    #formContainer label {
-      font-weight: bold;
-      display: block;
-      margin-top: 10px;
-    }
-
-    #formContainer input, 
-    #formContainer textarea {
+    #formContainer label { font-weight: bold; display: block; margin-top: 10px; }
+    #formContainer input, #formContainer textarea {
       width: 100%;
       padding: 8px;
       margin-top: 5px;
@@ -119,7 +110,7 @@
   <div id="map"></div>
   <button id="btnAgregarQueja">Agregar Queja</button>
   <div id="overlay"></div>
-  <div id="mapMessage">Se está verificando su queja</div>
+  <div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
 
   <div id="formContainer">
     <span id="closeForm">&times;</span>
@@ -152,10 +143,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const map = L.map('map', { tap: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    const map = L.map('map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
 
     fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
       .then(response => response.json())
@@ -194,10 +183,12 @@
       });
     }
 
+    // Mostrar solo puntos aprobados
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
       snapshot.forEach(child => {
         const data = child.val();
+        if(data.status !== "aprobado") return;
         const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
         if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
         reportCount[keyCoords]++;
@@ -205,6 +196,7 @@
 
       snapshot.forEach(child => {
         const data = child.val();
+        if(data.status !== "aprobado") return;
         const key = child.key;
         const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
         const count = reportCount[keyCoords];
@@ -243,17 +235,34 @@
       colocarMarcadorActivo = true;
     });
 
-    function colocarMarcador(ev) {
+    map.on('click', function(ev){
       if(!colocarMarcadorActivo) return;
       colocarMarcadorActivo = false;
       mapMessage.style.display = 'none';
 
-      // Abrir Google Form al hacer click/tap
-      window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
-    }
+      const { lat, lng } = ev.latlng;
+      const problema = document.getElementById('problema').value;
+      const descripcion = document.getElementById('descripcion').value;
 
-    map.on('click', colocarMarcador);
-    map.on('touchend', colocarMarcador); // para móviles
+      // Guardar en Firebase como pendiente y abrir Form
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+        .then(res => res.json())
+        .then(data => {
+          const street = data.address?.road || 'Calle desconocida';
+          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+          const fullStreet = `${street}, ${city}`;
+
+          db.ref("reportes").push({
+            lat, lng,
+            street: fullStreet,
+            description: `${problema}: ${descripcion}`,
+            status: "pendiente"
+          });
+
+          // Abrir Google Form
+          window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
+        });
+    });
   </script>
 </body>
 </html>
