@@ -183,6 +183,7 @@
       });
     }
 
+    // Mostrar solo puntos aprobados
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
       snapshot.forEach(child => {
@@ -234,6 +235,7 @@
       colocarMarcadorActivo = true;
     });
 
+    // ✅ Código nuevo que agrega soporte móvil y abre el formulario correctamente
     map.on('click', function(ev){
       if(!colocarMarcadorActivo) return;
       colocarMarcadorActivo = false;
@@ -243,6 +245,9 @@
       const problema = document.getElementById('problema').value;
       const descripcion = document.getElementById('descripcion').value;
 
+      // Abre la nueva pestaña primero para evitar bloqueos en móviles
+      const nuevaPestaña = window.open('', '_blank');
+
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
         .then(res => res.json())
         .then(data => {
@@ -257,41 +262,21 @@
             status: "pendiente"
           });
 
-          window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
+          nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
+        })
+        .catch(() => {
+          nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
         });
     });
 
-    /* ✅ Compatibilidad táctil (abre formulario correctamente en móviles) */
+    // ✅ Soporte táctil para móviles
     map.on('touchend', function(ev){
       if(!colocarMarcadorActivo) return;
       const touch = ev.originalEvent.changedTouches ? ev.originalEvent.changedTouches[0] : null;
       if(!touch) return;
 
       const point = map.mouseEventToLatLng(touch);
-      colocarMarcadorActivo = false;
-      mapMessage.style.display = 'none';
-
-      const { lat, lng } = point;
-      const problema = document.getElementById('problema').value;
-      const descripcion = document.getElementById('descripcion').value;
-
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-        .then(res => res.json())
-        .then(data => {
-          const street = data.address?.road || 'Calle desconocida';
-          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
-          const fullStreet = `${street}, ${city}`;
-
-          db.ref("reportes").push({
-            lat, lng,
-            street: fullStreet,
-            description: `${problema}: ${descripcion}`,
-            status: "pendiente"
-          });
-
-          // 👇 se abre dentro del evento táctil para no ser bloqueado
-          window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
-        });
+      map.fire('click', { latlng: point });
     });
   </script>
 </body>
