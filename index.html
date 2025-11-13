@@ -123,7 +123,7 @@
   <div id="map"></div>
   <button id="btnAgregarQueja">Agregar Queja</button>
   <div id="overlay"></div>
-  <div id="mapMessage">Se está verificando su queja</div>
+  <div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
 
   <div id="formContainer">
     <span id="closeForm">&times;</span>
@@ -190,7 +190,7 @@
 
     function addMarker(lat, lng, key, icon, street, descripcion="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-      const popupText = `<b>${street}</b><br>${descripcion}`;
+      let popupText = `<b>${street}</b><br>${descripcion}`;
       marker.bindPopup(popupText);
       marker.on('dblclick', () => {
         map.removeLayer(marker);
@@ -237,44 +237,32 @@
       formContainer.style.display = 'none';
     });
 
-    let colocarMarcadorActivo = false;
-
     formQueja.addEventListener('submit', (e) => {
       e.preventDefault();
       overlay.style.display = 'none';
       formContainer.style.display = 'none';
-      mapMessage.style.display = 'block'; // muestra mensaje de verificación
-      colocarMarcadorActivo = true;
-    });
 
-    map.on('click', function(ev){
-      if(!colocarMarcadorActivo) return;
-      colocarMarcadorActivo = false;
+      // Mensaje de verificación
+      alert("Se está verificando su queja. Una vez aprobada aparecerá en el mapa.");
 
-      const { lat, lng } = ev.latlng;
+      // Redirigir al formulario de Google
+      window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
+
+      // Guardar en Firebase como pendiente
       const problema = document.getElementById('problema').value;
       const descripcion = document.getElementById('descripcion').value;
 
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-        .then(res => res.json())
-        .then(data => {
-          const street = data.address?.road || 'Calle desconocida';
-          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
-          const fullStreet = `${street}, ${city}`;
+      db.ref("pendientes").push({
+        problema,
+        descripcion,
+        aprobado: false,
+        fecha: Date.now()
+      });
 
-          const newRef = db.ref("reportes").push({
-            lat, lng,
-            street: fullStreet,
-            description: `${problema}: ${descripcion}`,
-            status: "pendiente"
-          });
-
-          addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`);
-
-          // Abrir Google Form en otra pestaña
-          window.open('https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform', '_blank');
-        });
+      // Limpiar el formulario
+      formQueja.reset();
     });
   </script>
 </body>
 </html>
+
