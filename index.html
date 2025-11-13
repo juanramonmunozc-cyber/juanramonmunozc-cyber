@@ -261,14 +261,37 @@
         });
     });
 
-    /* ✅ Compatibilidad táctil (móvil) */
+    /* ✅ Compatibilidad táctil (abre formulario correctamente en móviles) */
     map.on('touchend', function(ev){
       if(!colocarMarcadorActivo) return;
       const touch = ev.originalEvent.changedTouches ? ev.originalEvent.changedTouches[0] : null;
       if(!touch) return;
 
       const point = map.mouseEventToLatLng(touch);
-      map.fire('click', { latlng: point });
+      colocarMarcadorActivo = false;
+      mapMessage.style.display = 'none';
+
+      const { lat, lng } = point;
+      const problema = document.getElementById('problema').value;
+      const descripcion = document.getElementById('descripcion').value;
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+        .then(res => res.json())
+        .then(data => {
+          const street = data.address?.road || 'Calle desconocida';
+          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+          const fullStreet = `${street}, ${city}`;
+
+          db.ref("reportes").push({
+            lat, lng,
+            street: fullStreet,
+            description: `${problema}: ${descripcion}`,
+            status: "pendiente"
+          });
+
+          // 👇 se abre dentro del evento táctil para no ser bloqueado
+          window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
+        });
     });
   </script>
 </body>
