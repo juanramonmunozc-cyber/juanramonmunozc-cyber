@@ -8,65 +8,21 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-    }
-
     #map {
       height: 500px;
       width: 100%;
+      margin-top: 10px;
       border: 2px solid #333;
     }
 
     #btnAgregarQueja {
       padding: 10px 15px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin: 15px;
-    }
-
-    /* Ventana flotante */
-    #formulario {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.3);
-      padding: 20px;
-      width: 300px;
-      text-align: left;
-      z-index: 1000;
-    }
-
-    #formulario input, #formulario textarea {
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    #formulario button {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
       background-color: #28a745;
       color: white;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
-    }
-
-    #formulario button:hover {
-      background-color: #218838;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -77,21 +33,12 @@
   <button id="btnAgregarQueja">Agregar Queja</button>
   <div id="map"></div>
 
-  <!-- Formulario flotante -->
-  <div id="formulario">
-    <h3>Registrar Queja</h3>
-    <input type="text" id="problema" placeholder="Tipo de problema" required>
-    <textarea id="descripcion" placeholder="Descripción del problema" rows="3" required></textarea>
-    <input type="file" id="foto" accept="image/*">
-    <button id="enviarQueja">Enviar</button>
-  </div>
-
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
 
   <script>
-    // --- Configuración Firebase ---
+    // Configuración Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
       authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
@@ -102,124 +49,117 @@
       appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef",
       measurementId: "G-XJ015E8YWX"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- Inicializar mapa ---
+    // Inicializar mapa
     const map = L.map('map');
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Centrar mapa en Tijuana automáticamente
+    // Centrar mapa en Tijuana
     fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
-      .then(res => res.json())
+      .then(response => response.json())
       .then(data => {
         if (data.length > 0) {
-          map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
+          const lat = parseFloat(data[0].lat);
+          const lon = parseFloat(data[0].lon);
+          map.setView([lat, lon], 12);
         } else {
           map.setView([32.533, -117.033], 12);
         }
+      })
+      .catch(err => {
+        console.error(err);
+        map.setView([32.533, -117.033], 12);
       });
 
-    // --- Crear íconos de colores ---
+    // Iconos
     function createIcon(color) {
       return L.icon({
         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
         iconSize: [25, 41],
         iconAnchor: [12, 41],
-        popupAnchor: [1, -34]
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
       });
     }
 
     function getMarkerColor(count) {
-      if (count >= 6) return 'red';
+      if (count >= 5) return 'red';
       if (count >= 3) return 'orange';
-      if (count >= 1) return 'green';
-      return 'blue';
+      return 'green';
     }
 
     function roundCoord(num) {
       return Math.round(num * 1000) / 1000;
     }
 
-    // --- Mostrar reportes ---
-    function addMarker(lat, lng, key, color, calle, problema, descripcion, foto) {
-      const icon = createIcon(color);
+    function addMarker(lat, lng, key, icon, street, descripcion="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-      let popup = `<b>${problema}</b><br>Calle: ${calle}<br>${descripcion}`;
-      if (foto) popup += `<br><img src="${foto}" width="100%">`;
-      marker.bindPopup(popup);
+      let popupText = `<b>Reporte</b><br>Calle: ${street}`;
+      if(descripcion) popupText += `<br>Descripción: ${descripcion}`;
+      marker.bindPopup(popupText);
       marker.on('dblclick', () => {
         map.removeLayer(marker);
         db.ref("reportes/" + key).remove();
       });
     }
 
-    // --- Cargar reportes existentes ---
+    // Cargar marcadores existentes
     db.ref("reportes").once("value").then(snapshot => {
-      const conteo = {};
+      const reportCount = {};
       snapshot.forEach(child => {
-        const d = child.val();
-        const keyC = `${roundCoord(d.lat)},${roundCoord(d.lng)}`;
-        conteo[keyC] = (conteo[keyC] || 0) + 1;
+        const data = child.val();
+        const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
+        if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
+        reportCount[keyCoords]++;
       });
 
       snapshot.forEach(child => {
-        const d = child.val();
-        const keyC = `${roundCoord(d.lat)},${roundCoord(d.lng)}`;
-        const color = getMarkerColor(conteo[keyC]);
-        addMarker(d.lat, d.lng, child.key, color, d.calle || "Calle desconocida, Tijuana", d.problema, d.descripcion, d.foto);
+        const data = child.val();
+        const key = child.key;
+        const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
+        const count = reportCount[keyCoords];
+        const color = getMarkerColor(count);
+        const icon = createIcon(color);
+        const street = data.street || "Calle desconocida, Tijuana";
+        const descripcion = data.description || "";
+        addMarker(data.lat, data.lng, key, icon, street, descripcion);
       });
     });
 
-    // --- Agregar queja ---
+    // Botón para agregar un marcador
     const btnAgregar = document.getElementById("btnAgregarQueja");
-    const formulario = document.getElementById("formulario");
-    let latTemp = null, lngTemp = null;
 
     btnAgregar.addEventListener("click", () => {
-      alert("Haz clic en el mapa para seleccionar la ubicación del problema.");
-      map.once("click", e => {
-        latTemp = e.latlng.lat;
-        lngTemp = e.latlng.lng;
-        formulario.style.display = "block";
+      alert("Haz clic en el mapa para colocar tu queja.");
+      // Permitir solo un marcador
+      map.once("click", function(e) {
+        const { lat, lng } = e.latlng;
+        const descripcion = prompt("Escribe la descripción de tu queja:");
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+          .then(res => res.json())
+          .then(data => {
+            const street = data.address?.road || 'Calle desconocida';
+            const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+            const fullStreet = `${street}, ${city}`;
+
+            const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet, description: descripcion });
+            addMarker(lat, lng, newRef.key, createIcon('green'), fullStreet, descripcion);
+          })
+          .catch(err => {
+            console.error(err);
+            const newRef = db.ref("reportes").push({ lat, lng, street: "Calle desconocida, Tijuana", description: descripcion });
+            addMarker(lat, lng, newRef.key, createIcon('green'), "Calle desconocida, Tijuana", descripcion);
+          });
       });
     });
-
-    document.getElementById("enviarQueja").addEventListener("click", async () => {
-      const problema = document.getElementById("problema").value;
-      const descripcion = document.getElementById("descripcion").value;
-      const file = document.getElementById("foto").files[0];
-
-      let fotoBase64 = null;
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          fotoBase64 = reader.result;
-          guardarQueja(problema, descripcion, fotoBase64);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        guardarQueja(problema, descripcion, null);
-      }
-    });
-
-    function guardarQueja(problema, descripcion, fotoBase64) {
-      if (!latTemp || !lngTemp) return alert("Selecciona un punto en el mapa.");
-
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latTemp}&lon=${lngTemp}&format=json`)
-        .then(r => r.json())
-        .then(data => {
-          const calle = data.address?.road || "Calle desconocida, Tijuana";
-          const ref = db.ref("reportes").push({ lat: latTemp, lng: lngTemp, problema, descripcion, foto: fotoBase64, calle });
-          addMarker(latTemp, lngTemp, ref.key, 'blue', calle, problema, descripcion, fotoBase64);
-          formulario.style.display = "none";
-          alert("¡Queja registrada exitosamente!");
-        })
-        .catch(() => alert("Error al obtener la calle."));
-    }
   </script>
 </body>
 </html>
+
