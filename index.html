@@ -13,6 +13,53 @@
       width: 100%;
       margin-top: 20px;
       border: 2px solid #333;
+      position: relative;
+    }
+
+    /* Botón flotante */
+    #btnAgregarQueja {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      padding: 10px 15px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    /* Modal formulario */
+    #modalFormulario {
+      display: none; /* oculto por defecto */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #modalContenido {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+    }
+
+    #modalContenido textarea {
+      width: 100%;
+      resize: none;
+    }
+
+    #modalContenido button {
+      margin-top: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -20,7 +67,20 @@
   <h1>Centro de atención</h1>
   <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
 
-  <div id="map"></div>
+  <div id="map">
+    <button id="btnAgregarQueja">Agregar Queja</button>
+  </div>
+
+  <!-- Modal formulario -->
+  <div id="modalFormulario">
+    <div id="modalContenido">
+      <h3>Descripción de la queja</h3>
+      <textarea id="descripcionQueja" rows="4" placeholder="Escribe tu queja aquí..."></textarea>
+      <br>
+      <button id="btnEnviar">Enviar</button>
+      <button id="btnCancelar">Cancelar</button>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
@@ -44,8 +104,6 @@
 
     // Inicializar mapa
     const map = L.map('map');
-
-    // Agregar tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
@@ -67,7 +125,7 @@
         map.setView([32.533, -117.033], 12);
       });
 
-    // Crear icono de color
+    // Iconos
     function createIcon(color) {
       return L.icon({
         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
@@ -82,24 +140,25 @@
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
       if (count >= 3) return 'orange';
-      return 'blue';
+      return 'green';
     }
 
     function roundCoord(num) {
       return Math.round(num * 1000) / 1000;
     }
 
-    // Agregar marcador con calle ya guardada
-    function addMarker(lat, lng, key, icon, street) {
+    function addMarker(lat, lng, key, icon, street, descripcion="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-      marker.bindPopup(`<b>Reporte</b><br>Calle: ${street}`);
+      let popupText = `<b>Reporte</b><br>Calle: ${street}`;
+      if(descripcion) popupText += `<br>Descripción: ${descripcion}`;
+      marker.bindPopup(popupText);
       marker.on('dblclick', () => {
         map.removeLayer(marker);
         db.ref("reportes/" + key).remove();
       });
     }
 
-    // Cargar marcadores de Firebase
+    // Cargar marcadores
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
       snapshot.forEach(child => {
@@ -116,40 +175,62 @@
         const count = reportCount[keyCoords];
         const color = getMarkerColor(count);
         const icon = createIcon(color);
-
-        // Mostrar la calle guardada en Firebase, si no existe, usar "Calle desconocida"
         const street = data.street || "Calle desconocida, Tijuana";
-        addMarker(data.lat, data.lng, key, icon, street);
+        const descripcion = data.description || "";
+        addMarker(data.lat, data.lng, key, icon, street, descripcion);
       });
     });
 
-    // Click en mapa vacío para agregar marcador
-    map.on('click', function(e) {
-      if (!e.originalEvent.target.classList.contains('leaflet-marker-icon')) {
-        const { lat, lng } = e.latlng;
+    // Manejo de botón y modal
+    const btnAgregar = document.getElementById("btnAgregarQueja");
+    const modal = document.getElementById("modalFormulario");
+    const btnEnviar = document.getElementById("btnEnviar");
+    const btnCancelar = document.getElementById("btnCancelar");
+    const descripcionInput = document.getElementById("descripcionQueja");
 
-        // Obtener calle con Nominatim solo al crear marcador
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-          .then(res => res.json())
-          .then(data => {
-            const street = data.address?.road || 'Calle desconocida';
-            const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
-            const fullStreet = `${street}, ${city}`;
+    let clickLatLng = null;
 
-            // Guardar en Firebase con la calle
-            const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet });
-            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet);
+    btnAgregar.addEventListener("click", () => {
+      alert("Haz clic en el mapa para seleccionar el lugar de tu queja.");
+      map.once("click", function(e) {
+        clickLatLng = e.latlng;
+        modal.style.display = "flex";
+      });
+    });
 
-            // Abrir formulario
-            window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
-          })
-          .catch(err => {
-            console.error(err);
-            const newRef = db.ref("reportes").push({ lat, lng, street: "Calle desconocida, Tijuana" });
-            addMarker(lat, lng, newRef.key, createIcon('blue'), "Calle desconocida, Tijuana");
-            window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
-          });
-      }
+    btnCancelar.addEventListener("click", () => {
+      modal.style.display = "none";
+      descripcionInput.value = "";
+    });
+
+    btnEnviar.addEventListener("click", () => {
+      if(!clickLatLng) return;
+      const { lat, lng } = clickLatLng;
+      const descripcion = descripcionInput.value || "";
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+        .then(res => res.json())
+        .then(data => {
+          const street = data.address?.road || 'Calle desconocida';
+          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+          const fullStreet = `${street}, ${city}`;
+
+          const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet, description: descripcion });
+          addMarker(lat, lng, newRef.key, createIcon('green'), fullStreet, descripcion);
+
+          modal.style.display = "none";
+          descripcionInput.value = "";
+          clickLatLng = null;
+        })
+        .catch(err => {
+          console.error(err);
+          const newRef = db.ref("reportes").push({ lat, lng, street: "Calle desconocida, Tijuana", description: descripcion });
+          addMarker(lat, lng, newRef.key, createIcon('green'), "Calle desconocida, Tijuana", descripcion);
+
+          modal.style.display = "none";
+          descripcionInput.value = "";
+          clickLatLng = null;
+        });
     });
   </script>
 </body>
