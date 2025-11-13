@@ -8,10 +8,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-
     #map {
       height: 500px;
       width: 100%;
@@ -140,6 +136,7 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-storage-compat.js"></script>
 
   <script>
     // Configuración Firebase
@@ -156,6 +153,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const storage = firebase.storage();
 
     // Inicializar mapa
     const map = L.map('map');
@@ -163,15 +161,24 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Centrar en Tijuana
+    // Centrar mapa en Tijuana
     fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
-      .then(res => res.json())
+      .then(response => response.json())
       .then(data => {
-        if (data.length > 0) map.setView([data[0].lat, data[0].lon], 12);
-        else map.setView([32.533, -117.033], 12);
+        if (data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lon = parseFloat(data[0].lon);
+          map.setView([lat, lon], 12);
+        } else {
+          map.setView([32.533, -117.033], 12);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        map.setView([32.533, -117.033], 12);
       });
 
-    // Crear iconos
+    // Iconos
     function createIcon(color) {
       return L.icon({
         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
@@ -183,21 +190,20 @@
       });
     }
 
-    // Cambio de color dependiendo de número de quejas
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
       if (count >= 3) return 'orange';
-      return 'blue'; // 🔵 Ahora azul por defecto
+      return 'blue'; // 🔵 puntos iniciales azules
     }
 
     function roundCoord(num) {
       return Math.round(num * 1000) / 1000;
     }
 
-    function addMarker(lat, lng, key, icon, street, descripcion="") {
+    function addMarker(lat, lng, key, icon, street, descripcion="", fotoURL="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-      let popupText = `<b>${street}</b>`;
-      if (descripcion) popupText += `<br>${descripcion}`;
+      let popupText = `<b>${street}</b><br>${descripcion}`;
+      if(fotoURL) popupText += `<br><img src="${fotoURL}" style="width:100%; max-width:200px; margin-top:5px; border-radius:8px;">`;
       marker.bindPopup(popupText);
       marker.on('dblclick', () => {
         map.removeLayer(marker);
@@ -205,7 +211,7 @@
       });
     }
 
-    // Mostrar marcadores guardados
+    // Cargar marcadores existentes
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
       snapshot.forEach(child => {
@@ -224,7 +230,8 @@
         const icon = createIcon(color);
         const street = data.street || "Calle desconocida, Tijuana";
         const descripcion = data.description || "";
-        addMarker(data.lat, data.lng, key, icon, street, descripcion);
+        const fotoURL = data.photoURL || "";
+        addMarker(data.lat, data.lng, key, icon, street, descripcion, fotoURL);
       });
     });
 
@@ -252,10 +259,18 @@
       overlay.style.display = 'none';
       formContainer.style.display = 'none';
 
-      map.once('click', (ev) => {
+      map.once('click', async (ev) => {
         const { lat, lng } = ev.latlng;
         const problema = document.getElementById('problema').value;
         const descripcion = document.getElementById('descripcion').value;
+        const fotoFile = document.getElementById('foto').files[0];
+
+        let fotoURL = "";
+        if(fotoFile){
+          const storageRef = storage.ref().child(`fotos/${Date.now()}_${fotoFile.name}`);
+          await storageRef.put(fotoFile);
+          fotoURL = await storageRef.getDownloadURL();
+        }
 
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
           .then(res => res.json())
@@ -264,8 +279,14 @@
             const city = data.address?.city || data.address?.town || 'Tijuana';
             const fullStreet = `${street}, ${city}`;
 
-            const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet, description: `${problema}: ${descripcion}` });
-            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`);
+            const newRef = db.ref("reportes").push({
+              lat, lng, 
+              street: fullStreet, 
+              description: `${problema}: ${descripcion}`,
+              photoURL: fotoURL
+            });
+
+            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`, fotoURL);
           });
       });
     });
