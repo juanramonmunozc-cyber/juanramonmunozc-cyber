@@ -8,99 +8,18 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
   <style>
-    #map {
-      height: 500px;
-      width: 100%;
-      margin-top: 10px;
-      border: 2px solid #333;
-    }
-
-    #btnAgregarQueja {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 15px 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      box-shadow: 0px 4px 6px rgba(0,0,0,0.3);
-      font-size: 16px;
-      z-index: 1001;
-    }
-
+    #map { height: 500px; width: 100%; margin-top: 10px; border: 2px solid #333; }
+    #btnAgregarQueja { position: fixed; bottom: 20px; right: 20px; padding: 15px 20px; background-color: #007bff; color: white; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0px 4px 6px rgba(0,0,0,0.3); font-size: 16px; z-index: 1001; }
     #btnAgregarQueja:hover { background-color: #0056b3; }
-
-    #overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      z-index: 999;
-    }
-
-    #formContainer {
-      display: none;
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      width: 350px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-      z-index: 1000;
-    }
-
+    #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; }
+    #formContainer { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 10px; width: 350px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 1000; }
     #formContainer h3 { margin-top: 0; }
     #formContainer label { font-weight: bold; display: block; margin-top: 10px; }
-    #formContainer input, #formContainer textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    #formContainer button {
-      margin-top: 15px;
-      padding: 10px;
-      width: 100%;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
+    #formContainer input, #formContainer textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
+    #formContainer button { margin-top: 15px; padding: 10px; width: 100%; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
     #formContainer button:hover { background-color: #218838; }
-
-    #closeForm {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 20px;
-      color: #333;
-    }
-
-    #mapMessage {
-      display: none;
-      position: fixed;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ffc107;
-      color: #333;
-      padding: 10px 20px;
-      border-radius: 5px;
-      z-index: 1002;
-      font-weight: bold;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    }
+    #closeForm { position: absolute; top: 10px; right: 15px; cursor: pointer; font-weight: bold; font-size: 20px; color: #333; }
+    #mapMessage { display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #ffc107; color: #333; padding: 10px 20px; border-radius: 5px; z-index: 1002; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
   </style>
 </head>
 <body>
@@ -110,7 +29,7 @@
   <div id="map"></div>
   <button id="btnAgregarQueja">Agregar Queja</button>
   <div id="overlay"></div>
-  <div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
+  <div id="mapMessage">Se está verificando su queja</div>
 
   <div id="formContainer">
     <span id="closeForm">&times;</span>
@@ -143,25 +62,19 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const map = L.map('map');
+    const map = L.map('map', { tap: true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
 
     fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
-      .then(response => response.json())
-      .then(data => {
-        if (data.length > 0) map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
-        else map.setView([32.533, -117.033], 12);
-      })
+      .then(r => r.json())
+      .then(data => map.setView(data.length ? [parseFloat(data[0].lat), parseFloat(data[0].lon)] : [32.533, -117.033], 12))
       .catch(() => map.setView([32.533, -117.033], 12));
 
     function createIcon(color) {
       return L.icon({
         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
       });
     }
 
@@ -175,8 +88,7 @@
 
     function addMarker(lat, lng, key, icon, street, descripcion="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-      let popupText = `<b>${street}</b><br>${descripcion}`;
-      marker.bindPopup(popupText);
+      marker.bindPopup(`<b>${street}</b><br>${descripcion}`);
       marker.on('dblclick', () => {
         map.removeLayer(marker);
         db.ref("reportes/" + key).remove();
@@ -190,21 +102,16 @@
         const data = child.val();
         if(data.status !== "aprobado") return;
         const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
-        if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
-        reportCount[keyCoords]++;
+        reportCount[keyCoords] = (reportCount[keyCoords] || 0) + 1;
       });
-
       snapshot.forEach(child => {
         const data = child.val();
         if(data.status !== "aprobado") return;
         const key = child.key;
         const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
         const count = reportCount[keyCoords];
-        const color = getMarkerColor(count);
-        const icon = createIcon(color);
-        const street = data.street || "Calle desconocida, Tijuana";
-        const descripcion = data.description || "";
-        addMarker(data.lat, data.lng, key, icon, street, descripcion);
+        const icon = createIcon(getMarkerColor(count));
+        addMarker(data.lat, data.lng, key, icon, data.street || "Calle desconocida", data.description || "");
       });
     });
 
@@ -219,14 +126,12 @@
       overlay.style.display = 'block';
       formContainer.style.display = 'block';
     });
-
     closeForm.addEventListener('click', () => {
       overlay.style.display = 'none';
       formContainer.style.display = 'none';
     });
 
     let colocarMarcadorActivo = false;
-
     formQueja.addEventListener('submit', (e) => {
       e.preventDefault();
       overlay.style.display = 'none';
@@ -244,7 +149,6 @@
       const problema = document.getElementById('problema').value;
       const descripcion = document.getElementById('descripcion').value;
 
-      // Guardar en Firebase como pendiente y abrir Form
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
         .then(res => res.json())
         .then(data => {
@@ -252,17 +156,20 @@
           const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
           const fullStreet = `${street}, ${city}`;
 
-          db.ref("reportes").push({
-            lat, lng,
+          // Guardar en "pendientes" en Firebase
+          db.ref("pendientes").push({
+            lat, 
+            lng,
             street: fullStreet,
             description: `${problema}: ${descripcion}`,
             status: "pendiente"
           });
 
-          // Abrir Google Form
+          // Abrir Form de Google
           window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
         });
     });
   </script>
 </body>
 </html>
+
