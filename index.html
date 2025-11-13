@@ -15,7 +15,6 @@
       border: 2px solid #333;
     }
 
-    /* Botón flotante */
     #btnAgregarQueja {
       position: fixed;
       bottom: 20px;
@@ -34,7 +33,6 @@
       background-color: #0056b3;
     }
 
-    /* Fondo oscuro */
     #overlay {
       display: none;
       position: fixed;
@@ -44,7 +42,6 @@
       z-index: 999;
     }
 
-    /* Formulario centrado */
     #formContainer {
       display: none;
       position: fixed;
@@ -108,27 +105,19 @@
   <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
 
   <div id="map"></div>
-
-  <!-- Botón flotante -->
   <button id="btnAgregarQueja">Agregar Queja</button>
-
-  <!-- Fondo oscuro -->
   <div id="overlay"></div>
 
-  <!-- Formulario flotante -->
   <div id="formContainer">
     <span id="closeForm">&times;</span>
     <h3>Nueva Queja</h3>
     <form id="formQueja">
       <label>Problema:</label>
       <input type="text" id="problema" placeholder="Ej. Fuga de agua" required>
-
       <label>Descripción:</label>
       <textarea id="descripcion" rows="3" placeholder="Describe el problema..." required></textarea>
-
       <label>Foto:</label>
       <input type="file" id="foto" accept="image/*">
-
       <button type="submit">Enviar Queja</button>
     </form>
   </div>
@@ -139,7 +128,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-storage-compat.js"></script>
 
   <script>
-    // Configuración Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
       authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
@@ -155,30 +143,19 @@
     const db = firebase.database();
     const storage = firebase.storage();
 
-    // Inicializar mapa
     const map = L.map('map');
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Centrar mapa en Tijuana
     fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
       .then(response => response.json())
       .then(data => {
-        if (data.length > 0) {
-          const lat = parseFloat(data[0].lat);
-          const lon = parseFloat(data[0].lon);
-          map.setView([lat, lon], 12);
-        } else {
-          map.setView([32.533, -117.033], 12);
-        }
+        if (data.length > 0) map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
+        else map.setView([32.533, -117.033], 12);
       })
-      .catch(err => {
-        console.error(err);
-        map.setView([32.533, -117.033], 12);
-      });
+      .catch(() => map.setView([32.533, -117.033], 12));
 
-    // Iconos
     function createIcon(color) {
       return L.icon({
         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
@@ -193,12 +170,10 @@
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
       if (count >= 3) return 'orange';
-      return 'blue'; // 🔵 puntos iniciales azules
+      return 'blue';
     }
 
-    function roundCoord(num) {
-      return Math.round(num * 1000) / 1000;
-    }
+    function roundCoord(num) { return Math.round(num * 1000) / 1000; }
 
     function addMarker(lat, lng, key, icon, street, descripcion="", fotoURL="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
@@ -211,7 +186,6 @@
       });
     }
 
-    // Cargar marcadores existentes
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
       snapshot.forEach(child => {
@@ -235,7 +209,6 @@
       });
     });
 
-    // Elementos del formulario
     const overlay = document.getElementById('overlay');
     const formContainer = document.getElementById('formContainer');
     const closeForm = document.getElementById('closeForm');
@@ -252,7 +225,6 @@
       formContainer.style.display = 'none';
     });
 
-    // Enviar formulario
     formQueja.addEventListener('submit', (e) => {
       e.preventDefault();
       overlay.style.display = 'none';
@@ -260,13 +232,11 @@
 
       alert("Haz clic en el mapa para colocar tu queja. Para agregar otra queja, abre el formulario nuevamente.");
 
-      // Listener mínimo para colocar marcador una vez por formulario
-      function colocarMarcador(ev) {
+      map.once('click', function colocarMarcador(ev) {
         const { lat, lng } = ev.latlng;
         const problema = document.getElementById('problema').value;
         const descripcion = document.getElementById('descripcion').value;
         const fotoFile = document.getElementById('foto').files[0];
-
         let fotoURL = "";
 
         if(fotoFile){
@@ -292,8 +262,8 @@
               const fullStreet = `${street}, ${city}`;
 
               const newRef = db.ref("reportes").push({
-                lat, lng, 
-                street: fullStreet, 
+                lat, lng,
+                street: fullStreet,
                 description: `${problema}: ${descripcion}`,
                 photoURL: fotoURL
               });
@@ -301,11 +271,7 @@
               addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`, fotoURL);
             });
         }
-
-        map.off('click', colocarMarcador);
-      }
-
-      map.on('click', colocarMarcador);
+      });
     });
   </script>
 </body>
