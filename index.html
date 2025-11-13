@@ -26,26 +26,27 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js"></script>
+  <!-- Firebase modular -->
+  <script type="module">
+    // 🔥 Importar funciones específicas de Firebase (modular SDK)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js";
 
-  <script>
-    // 🔧 Configura con tus credenciales de Firebase
+    // 🔧 Configura con tus credenciales
     const firebaseConfig = {
-    apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
-    authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
-    databaseURL: "https://mapa-de-quejas-e5354-default-rtdb.firebaseio.com",
-    projectId: "mapa-de-quejas-e5354",
-    storageBucket: "mapa-de-quejas-e5354.firebasestorage.app",
-    messagingSenderId: "1098104212670",
-    appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef",
-    measurementId: "G-XJ015E8YWX"
-  };
+      apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
+      authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
+      databaseURL: "https://mapa-de-quejas-e5354-default-rtdb.firebaseio.com",
+      projectId: "mapa-de-quejas-e5354",
+      storageBucket: "mapa-de-quejas-e5354.firebasestorage.app",
+      messagingSenderId: "1098104212670",
+      appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef",
+      measurementId: "G-XJ015E8YWX"
+    };
 
-    // Inicializar Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database(app);
+    // Inicializar Firebase y base de datos
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
     // 🗺️ Crear el mapa centrado en Tijuana
     const map = L.map('map').setView([32.533, -117.033], 12);
@@ -55,19 +56,18 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // 🔹 Agregar marcador
+    // 🔹 Función para agregar marcador
     function addMarker(lat, lng) {
       const marker = L.marker([lat, lng]).addTo(map);
       marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
 
-      // Doble clic para eliminar
-      marker.on('dblclick', function() {
-        map.removeLayer(marker);
-      });
+      // Doble clic para eliminar el marcador
+      marker.on('dblclick', () => map.removeLayer(marker));
     }
 
-    // 🔹 Cargar los reportes desde Firebase
-    db.ref("reportes").on("value", snapshot => {
+    // 🔹 Leer reportes desde Firebase
+    const reportesRef = ref(db, "reportes");
+    onValue(reportesRef, snapshot => {
       map.eachLayer(layer => {
         if (layer instanceof L.Marker) map.removeLayer(layer);
       });
@@ -77,11 +77,11 @@
       });
     });
 
-    // 🔹 Guardar nuevo reporte al hacer clic
-    map.on('click', function(e) {
+    // 🔹 Guardar nuevo reporte al hacer clic en el mapa
+    map.on('click', e => {
       const { lat, lng } = e.latlng;
       addMarker(lat, lng);
-      db.ref("reportes").push({ lat, lng });
+      push(reportesRef, { lat, lng });
       window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
     });
   </script>
