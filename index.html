@@ -23,8 +23,6 @@
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
 
@@ -51,7 +49,7 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Función para crear icono de color
+    // Crear icono de color
     function createIcon(color) {
       return L.icon({
         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
@@ -63,19 +61,19 @@
       });
     }
 
-    // Función para definir color según cantidad de reportes
+    // Definir color según cantidad de reportes
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
       if (count >= 3) return 'orange';
-      return 'blue';
+      return 'green';
     }
 
     // Redondear coordenadas para agrupar reportes cercanos
     function roundCoord(num) {
-      return Math.round(num * 1000) / 1000; // ~100 m de agrupamiento
+      return Math.round(num * 1000) / 1000;
     }
 
-    // Función para obtener dirección usando Nominatim
+    // Obtener dirección usando Nominatim
     function getAddress(lat, lng, callback) {
       const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
       fetch(url)
@@ -92,34 +90,31 @@
         });
     }
 
-    // Función para agregar marcador con dirección y color
+    // Agregar marcador con color y calle
     function addMarker(lat, lng, key, icon) {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
 
-      // Obtener dirección
       getAddress(lat, lng, (address) => {
         marker.bindPopup(`
           <b>Reporte</b><br>
+          Calle: ${address}<br>
           Lat: ${lat.toFixed(4)}<br>
-          Lng: ${lng.toFixed(4)}<br>
-          Calle: ${address}
+          Lng: ${lng.toFixed(4)}
         `).openPopup();
       });
 
-      // Doble clic elimina marcador y Firebase
       marker.on('dblclick', () => {
         map.removeLayer(marker);
         db.ref("reportes/" + key).remove();
       });
     }
 
-    // Cargar marcadores desde Firebase y agrupar por ubicación
+    // Cargar marcadores desde Firebase
     db.ref("reportes").on("value", snapshot => {
       map.eachLayer(layer => {
         if (layer instanceof L.Marker) map.removeLayer(layer);
       });
 
-      // Contar reportes por ubicación redondeada
       const reportCount = {};
       snapshot.forEach(child => {
         const data = child.val();
@@ -128,7 +123,6 @@
         reportCount[keyCoords]++;
       });
 
-      // Dibujar marcadores con color según cantidad de reportes
       snapshot.forEach(child => {
         const data = child.val();
         const key = child.key;
@@ -140,11 +134,11 @@
       });
     });
 
-    // Agregar marcador al hacer clic en el mapa
+    // Agregar marcador al hacer clic
     map.on('click', e => {
       const { lat, lng } = e.latlng;
       const newRef = db.ref("reportes").push({ lat, lng });
-      addMarker(lat, lng, newRef.key, createIcon('blue'));
+      addMarker(lat, lng, newRef.key, createIcon('green'));
       window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
     });
   </script>
