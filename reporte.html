@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detalle del Reporte</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-storage-compat.js"></script>
+</head>
+<body>
+<h1>Detalle del Reporte</h1>
+<div id="reporte"></div>
+
+<input type="file" id="fotoInput" />
+<textarea id="comentario" placeholder="Agregar comentario"></textarea>
+<button id="enviarComentario">Enviar</button>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
+  authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
+  databaseURL: "https://mapa-de-quejas-e5354-default-rtdb.firebaseio.com",
+  projectId: "mapa-de-quejas-e5354",
+  storageBucket: "mapa-de-quejas-e5354.appspot.com",
+  messagingSenderId: "1098104212670",
+  appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const storage = firebase.storage();
+
+// Obtener el key del reporte de la URL
+const urlParams = new URLSearchParams(window.location.search);
+const key = urlParams.get('key');
+
+function cargarReporte() {
+  db.ref("reportes/" + key).once("value").then(snapshot => {
+    const data = snapshot.val();
+    if(!data) { document.getElementById('reporte').innerText = "Reporte no encontrado"; return; }
+
+    let html = `<h2>${data.street}</h2>`;
+    html += `<p>${data.description}</p>`;
+    html += `<p><b>Estado:</b> ${data.status}</p>`;
+
+    if(data.photos) data.photos.forEach(url => {
+      html += `<img src="${url}" style="width:150px;margin:5px;">`;
+    });
+
+    if(data.updates) data.updates.forEach(u => {
+      html += `<p><i>${u}</i></p>`;
+    });
+
+    document.getElementById('reporte').innerHTML = html;
+  });
+}
+
+cargarReporte();
+
+document.getElementById('enviarComentario').addEventListener('click', () => {
+  const comentario = document.getElementById('comentario').value;
+  const fotoInput = document.getElementById('fotoInput');
+  if(comentario) db.ref("reportes/" + key + "/updates").push(comentario);
+
+  if(fotoInput.files.length > 0){
+    const file = fotoInput.files[0];
+    const storageRef = storage.ref('fotos/' + key + '/' + file.name);
+    storageRef.put(file).then(() => {
+      storageRef.getDownloadURL().then(url => {
+        db.ref("reportes/" + key + "/photos").push(url);
+        cargarReporte(); // recarga para mostrar foto
+      });
+    });
+  } else {
+    cargarReporte(); // recarga solo comentario
+  }
+});
+</script>
+</body>
+</html>
