@@ -7,6 +7,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-storage-compat.js"></script>
+<style>
+  img { width: 150px; margin: 5px; border-radius: 5px; }
+  textarea { width: 100%; margin-top: 5px; }
+</style>
 </head>
 <body>
 <h1>Detalle del Reporte</h1>
@@ -31,7 +35,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const storage = firebase.storage();
 
-// Obtener el key del reporte desde la URL
+// Obtener la key del reporte desde la URL
 const urlParams = new URLSearchParams(window.location.search);
 const key = urlParams.get('key');
 
@@ -44,13 +48,22 @@ function cargarReporte() {
     html += `<p><b>Problema y descripción:</b> ${data.description}</p>`;
     html += `<p><b>Estado:</b> ${data.status}</p>`;
 
-    if(data.photos) data.photos.forEach(url => {
-      html += `<img src="${url}" style="width:150px;margin:5px;">`;
-    });
+    // Mostrar fotos si existen
+    if(data.photos) {
+      html += `<div>`;
+      Object.values(data.photos).forEach(url => {
+        html += `<img src="${url}">`;
+      });
+      html += `</div>`;
+    }
 
-    if(data.updates) data.updates.forEach(u => {
-      html += `<p><i>${u}</i></p>`;
-    });
+    // Mostrar comentarios/actualizaciones
+    if(data.updates) {
+      html += `<h3>Comentarios/Actualizaciones:</h3>`;
+      Object.values(data.updates).forEach(u => {
+        html += `<p><i>${u}</i></p>`;
+      });
+    }
 
     document.getElementById('reporte').innerHTML = html;
   });
@@ -58,7 +71,7 @@ function cargarReporte() {
 
 cargarReporte();
 
-// Subir comentarios y fotos
+// Subir comentario y foto
 document.getElementById('enviarComentario').addEventListener('click', () => {
   const comentario = document.getElementById('comentario').value;
   const fotoInput = document.getElementById('fotoInput');
@@ -71,7 +84,7 @@ document.getElementById('enviarComentario').addEventListener('click', () => {
     storageRef.put(file).then(() => {
       storageRef.getDownloadURL().then(url => {
         db.ref("reportes/" + key + "/photos").push(url);
-        cargarReporte(); // recarga para mostrar foto
+        cargarReporte(); // recarga para mostrar la foto
       });
     });
   } else {
