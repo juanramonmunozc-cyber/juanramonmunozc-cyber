@@ -3,61 +3,60 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CESPT - Atención Ciudadana</title>
-
+  <title>CESPT - Reporte Ciudadano</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
   <style>
     #map {
-      height: 500px;
+      height: 100vh;
       width: 100%;
-      margin-top: 10px;
-      border: 2px solid #333;
     }
 
-    #btnAgregarQueja {
+    /* Botón flotante */
+    #btnQueja {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 15px 20px;
+      bottom: 30px;
+      right: 30px;
       background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 50px;
+      padding: 14px 20px;
+      border-radius: 50%;
+      font-size: 24px;
       cursor: pointer;
-      box-shadow: 0px 4px 6px rgba(0,0,0,0.3);
-      font-size: 16px;
-      z-index: 1001;
-    }
-
-    #btnAgregarQueja:hover {
-      background-color: #0056b3;
-    }
-
-    #overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      z-index: 999;
-    }
-
-    #formContainer {
-      display: none;
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      width: 350px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
       z-index: 1000;
     }
 
+    /* Fondo oscuro */
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.6);
+      display: none;
+      z-index: 999;
+    }
+
+    /* Formulario flotante */
+    #formContainer {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      z-index: 1001;
+      width: 320px;
+    }
+
     #formContainer h3 {
-      margin-top: 0;
+      text-align: center;
+      margin-bottom: 15px;
     }
 
     #formContainer label {
@@ -66,236 +65,109 @@
       margin-top: 10px;
     }
 
-    #formContainer input, 
-    #formContainer textarea {
+    #formContainer input, #formContainer textarea {
       width: 100%;
       padding: 8px;
       margin-top: 5px;
-      border: 1px solid #ccc;
       border-radius: 5px;
+      border: 1px solid #ccc;
     }
 
     #formContainer button {
       margin-top: 15px;
-      padding: 10px;
       width: 100%;
-      background-color: #28a745;
-      color: white;
+      padding: 10px;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
       cursor: pointer;
     }
 
     #formContainer button:hover {
-      background-color: #218838;
-    }
-
-    #closeForm {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 20px;
-      color: #333;
-    }
-
-    #mapMessage {
-      display: none;
-      position: fixed;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ffc107;
-      color: #333;
-      padding: 10px 20px;
-      border-radius: 5px;
-      z-index: 1002;
-      font-weight: bold;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
-  <h1>Centro de atención</h1>
-  <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
-
   <div id="map"></div>
-  <button id="btnAgregarQueja">Agregar Queja</button>
-  <div id="overlay"></div>
-  <div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
 
+  <!-- Botón flotante -->
+  <button id="btnQueja">+</button>
+
+  <!-- Fondo oscuro -->
+  <div id="overlay"></div>
+
+  <!-- Formulario flotante -->
   <div id="formContainer">
-    <span id="closeForm">&times;</span>
-    <h3>Nueva Queja</h3>
+    <h3>Reportar Problema</h3>
     <form id="formQueja">
-      <label>Problema:</label>
-      <input type="text" id="problema" placeholder="Ej. Fuga de agua" required>
+      <label>Tipo de problema:</label>
+      <input type="text" id="problema" required placeholder="Ej. Fuga de agua">
+
       <label>Descripción:</label>
-      <textarea id="descripcion" rows="3" placeholder="Describe el problema..." required></textarea>
-      <label>Foto:</label>
-      <input type="file" id="foto" accept="image/*">
-      <button type="submit">Enviar Queja</button>
+      <textarea id="descripcion" rows="3" placeholder="Describe brevemente el problema"></textarea>
+
+      <button type="submit">Enviar</button>
     </form>
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-storage-compat.js"></script>
-
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
-      authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
-      databaseURL: "https://mapa-de-quejas-e5354-default-rtdb.firebaseio.com",
-      projectId: "mapa-de-quejas-e5354",
-      storageBucket: "mapa-de-quejas-e5354.appspot.com",
-      messagingSenderId: "1098104212670",
-      appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef",
-      measurementId: "G-XJ015E8YWX"
-    };
+    // Inicializar mapa
+    const map = L.map('map').setView([32.5149, -117.0382], 12);
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const storage = firebase.storage();
-
-    const map = L.map('map');
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
-      .then(response => response.json())
-      .then(data => {
-        if (data.length > 0) map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
-        else map.setView([32.533, -117.033], 12);
-      })
-      .catch(() => map.setView([32.533, -117.033], 12));
+    // Marcadores iniciales
+    const reportes = [
+      { lat: 32.5239, lng: -116.9731, quejas: 1 },
+      { lat: 32.5069, lng: -117.0031, quejas: 4 },
+      { lat: 32.4950, lng: -117.0280, quejas: 8 },
+    ];
 
-    function createIcon(color) {
-      return L.icon({
-        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-      });
+    function obtenerColor(quejas) {
+      if (quejas < 3) return 'blue';
+      if (quejas < 6) return 'orange';
+      return 'red';
     }
 
-    function getMarkerColor(count) {
-      if (count >= 5) return 'red';
-      if (count >= 3) return 'orange';
-      return 'blue';
-    }
-
-    function roundCoord(num) { return Math.round(num * 1000) / 1000; }
-
-    function addMarker(lat, lng, key, icon, street, descripcion="", fotoURL="") {
-      const marker = L.marker([lat, lng], { icon }).addTo(map);
-      let popupText = `<b>${street}</b><br>${descripcion}`;
-      if(fotoURL) popupText += `<br><img src="${fotoURL}" style="width:100%; max-width:200px; margin-top:5px; border-radius:8px;">`;
-      marker.bindPopup(popupText);
-      marker.on('dblclick', () => {
-        map.removeLayer(marker);
-        db.ref("reportes/" + key).remove();
-      });
-    }
-
-    db.ref("reportes").once("value").then(snapshot => {
-      const reportCount = {};
-      snapshot.forEach(child => {
-        const data = child.val();
-        const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
-        if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
-        reportCount[keyCoords]++;
-      });
-
-      snapshot.forEach(child => {
-        const data = child.val();
-        const key = child.key;
-        const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
-        const count = reportCount[keyCoords];
-        const color = getMarkerColor(count);
-        const icon = createIcon(color);
-        const street = data.street || "Calle desconocida, Tijuana";
-        const descripcion = data.description || "";
-        const fotoURL = data.photoURL || "";
-        addMarker(data.lat, data.lng, key, icon, street, descripcion, fotoURL);
-      });
+    reportes.forEach(rep => {
+      const marker = L.circleMarker([rep.lat, rep.lng], {
+        color: obtenerColor(rep.quejas),
+        radius: 10
+      }).addTo(map);
+      marker.bindPopup(`Quejas: ${rep.quejas}`);
     });
 
+    // Elementos del formulario
+    const btnQueja = document.getElementById('btnQueja');
     const overlay = document.getElementById('overlay');
     const formContainer = document.getElementById('formContainer');
-    const closeForm = document.getElementById('closeForm');
     const formQueja = document.getElementById('formQueja');
-    const btnAgregar = document.getElementById('btnAgregarQueja');
-    const mapMessage = document.getElementById('mapMessage');
 
-    btnAgregar.addEventListener('click', () => {
+    // Mostrar formulario
+    btnQueja.addEventListener('click', () => {
       overlay.style.display = 'block';
       formContainer.style.display = 'block';
     });
 
-    closeForm.addEventListener('click', () => {
+    // Ocultar al hacer clic fuera
+    overlay.addEventListener('click', () => {
       overlay.style.display = 'none';
       formContainer.style.display = 'none';
     });
 
-    let colocarMarcadorActivo = false;
-
+    // Enviar formulario → abrir Google Forms
     formQueja.addEventListener('submit', (e) => {
       e.preventDefault();
       overlay.style.display = 'none';
       formContainer.style.display = 'none';
-      mapMessage.style.display = 'block'; // muestra mensaje
-      colocarMarcadorActivo = true;
-    });
-
-    map.on('click', function(ev){
-      if(!colocarMarcadorActivo) return;
-      colocarMarcadorActivo = false;
-      mapMessage.style.display = 'none'; // oculta mensaje
-
-      const { lat, lng } = ev.latlng;
-      const problema = document.getElementById('problema').value;
-      const descripcion = document.getElementById('descripcion').value;
-      const fotoFile = document.getElementById('foto').files[0];
-      let fotoURL = "";
-
-      function guardarYAgregar() {
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-          .then(res => res.json())
-          .then(data => {
-            const street = data.address?.road || 'Calle desconocida';
-            const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
-            const fullStreet = `${street}, ${city}`;
-
-            const newRef = db.ref("reportes").push({
-              lat, lng,
-              street: fullStreet,
-              description: `${problema}: ${descripcion}`,
-              photoURL: fotoURL
-            });
-
-            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`, fotoURL);
-          });
-      }
-
-      if(fotoFile){
-        const storageRef = storage.ref().child(`fotos/${Date.now()}_${fotoFile.name}`);
-        fotoFile.arrayBuffer().then(buffer => {
-          storageRef.put(new Uint8Array(buffer)).then(() => {
-            storageRef.getDownloadURL().then(url => {
-              fotoURL = url;
-              guardarYAgregar();
-            });
-          });
-        });
-      } else {
-        guardarYAgregar();
-      }
+      window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
     });
   </script>
 </body>
