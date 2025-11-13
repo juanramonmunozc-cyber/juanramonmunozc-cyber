@@ -260,36 +260,52 @@
 
       alert("Haz clic en el mapa para colocar tu queja. Para agregar otra queja, abre el formulario nuevamente.");
 
-      map.once('click', async (ev) => {
+      // Listener mínimo para colocar marcador una vez por formulario
+      function colocarMarcador(ev) {
         const { lat, lng } = ev.latlng;
         const problema = document.getElementById('problema').value;
         const descripcion = document.getElementById('descripcion').value;
         const fotoFile = document.getElementById('foto').files[0];
 
         let fotoURL = "";
+
         if(fotoFile){
           const storageRef = storage.ref().child(`fotos/${Date.now()}_${fotoFile.name}`);
-          await storageRef.put(fotoFile);
-          fotoURL = await storageRef.getDownloadURL();
+          fotoFile.arrayBuffer().then(buffer => {
+            storageRef.put(new Uint8Array(buffer)).then(() => {
+              storageRef.getDownloadURL().then(url => {
+                fotoURL = url;
+                guardarYAgregar();
+              });
+            });
+          });
+        } else {
+          guardarYAgregar();
         }
 
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-          .then(res => res.json())
-          .then(data => {
-            const street = data.address?.road || 'Calle desconocida';
-            const city = data.address?.city || data.address?.town || 'Tijuana';
-            const fullStreet = `${street}, ${city}`;
+        function guardarYAgregar() {
+          fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+            .then(res => res.json())
+            .then(data => {
+              const street = data.address?.road || 'Calle desconocida';
+              const city = data.address?.city || data.address?.town || 'Tijuana';
+              const fullStreet = `${street}, ${city}`;
 
-            const newRef = db.ref("reportes").push({
-              lat, lng, 
-              street: fullStreet, 
-              description: `${problema}: ${descripcion}`,
-              photoURL: fotoURL
+              const newRef = db.ref("reportes").push({
+                lat, lng, 
+                street: fullStreet, 
+                description: `${problema}: ${descripcion}`,
+                photoURL: fotoURL
+              });
+
+              addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`, fotoURL);
             });
+        }
 
-            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`, fotoURL);
-          });
-      });
+        map.off('click', colocarMarcador);
+      }
+
+      map.on('click', colocarMarcador);
     });
   </script>
 </body>
