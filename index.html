@@ -225,53 +225,59 @@
       formContainer.style.display = 'none';
     });
 
+    // ======= CORRECCIÓN PARA PONER MARCADORES =======
+    let colocarMarcadorActivo = false;
+
+    map.on('click', function(ev){
+      if(!colocarMarcadorActivo) return;
+      colocarMarcadorActivo = false;
+
+      const { lat, lng } = ev.latlng;
+      const problema = document.getElementById('problema').value;
+      const descripcion = document.getElementById('descripcion').value;
+      const fotoFile = document.getElementById('foto').files[0];
+      let fotoURL = "";
+
+      function guardarYAgregar() {
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+          .then(res => res.json())
+          .then(data => {
+            const street = data.address?.road || 'Calle desconocida';
+            const city = data.address?.city || data.address?.town || 'Tijuana';
+            const fullStreet = `${street}, ${city}`;
+
+            const newRef = db.ref("reportes").push({
+              lat, lng,
+              street: fullStreet,
+              description: `${problema}: ${descripcion}`,
+              photoURL: fotoURL
+            });
+
+            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`, fotoURL);
+          });
+      }
+
+      if(fotoFile){
+        const storageRef = storage.ref().child(`fotos/${Date.now()}_${fotoFile.name}`);
+        fotoFile.arrayBuffer().then(buffer => {
+          storageRef.put(new Uint8Array(buffer)).then(() => {
+            storageRef.getDownloadURL().then(url => {
+              fotoURL = url;
+              guardarYAgregar();
+            });
+          });
+        });
+      } else {
+        guardarYAgregar();
+      }
+    });
+
     formQueja.addEventListener('submit', (e) => {
       e.preventDefault();
       overlay.style.display = 'none';
       formContainer.style.display = 'none';
-
-      alert("Haz clic en el mapa para colocar tu queja. Para agregar otra queja, abre el formulario nuevamente.");
-
-      map.once('click', function colocarMarcador(ev) {
-        const { lat, lng } = ev.latlng;
-        const problema = document.getElementById('problema').value;
-        const descripcion = document.getElementById('descripcion').value;
-        const fotoFile = document.getElementById('foto').files[0];
-        let fotoURL = "";
-
-        if(fotoFile){
-          const storageRef = storage.ref().child(`fotos/${Date.now()}_${fotoFile.name}`);
-          fotoFile.arrayBuffer().then(buffer => {
-            storageRef.put(new Uint8Array(buffer)).then(() => {
-              storageRef.getDownloadURL().then(url => {
-                fotoURL = url;
-                guardarYAgregar();
-              });
-            });
-          });
-        } else {
-          guardarYAgregar();
-        }
-
-        function guardarYAgregar() {
-          fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-            .then(res => res.json())
-            .then(data => {
-              const street = data.address?.road || 'Calle desconocida';
-              const city = data.address?.city || data.address?.town || 'Tijuana';
-              const fullStreet = `${street}, ${city}`;
-
-              const newRef = db.ref("reportes").push({
-                lat, lng,
-                street: fullStreet,
-                description: `${problema}: ${descripcion}`,
-                photoURL: fotoURL
-              });
-
-              addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`, fotoURL);
-            });
-        }
-      });
+      alert("Haz clic en el mapa para colocar tu queja.");
+      colocarMarcadorActivo = true;
     });
   </script>
 </body>
