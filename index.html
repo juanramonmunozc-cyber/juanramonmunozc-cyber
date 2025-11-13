@@ -70,6 +70,11 @@
       return 'green';
     }
 
+    // Redondear coordenadas para agrupar reportes cercanos
+    function roundCoord(num) {
+      return Math.round(num * 1000) / 1000; // redondea a 0.001 ~ 100 m
+    }
+
     // Función para agregar marcador
     function addMarker(lat, lng, key, icon) {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
@@ -87,20 +92,20 @@
         if (layer instanceof L.Marker) map.removeLayer(layer);
       });
 
-      // Contar reportes por ubicación
+      // Contar reportes por ubicación redondeada
       const reportCount = {};
       snapshot.forEach(child => {
         const data = child.val();
-        const keyCoords = `${data.lat.toFixed(4)},${data.lng.toFixed(4)}`;
+        const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
         if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
         reportCount[keyCoords]++;
       });
 
-      // Dibujar marcadores con color según cantidad
+      // Dibujar marcadores con color según cantidad de reportes cercanos
       snapshot.forEach(child => {
         const data = child.val();
         const key = child.key;
-        const keyCoords = `${data.lat.toFixed(4)},${data.lng.toFixed(4)}`;
+        const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
         const count = reportCount[keyCoords];
         const color = getMarkerColor(count);
         const icon = createIcon(color);
