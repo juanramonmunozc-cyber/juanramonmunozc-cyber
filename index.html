@@ -56,29 +56,62 @@
       z-index: 1000;
     }
 
-    #formContainer h3 { margin-top: 0; }
-    #formContainer label { font-weight: bold; display: block; margin-top: 10px; }
-    #formContainer input, #formContainer textarea {
-      width: 100%; padding: 8px; margin-top: 5px;
-      border: 1px solid #ccc; border-radius: 5px;
+    #formContainer h3 {
+      margin-top: 0;
     }
+
+    #formContainer label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+
+    #formContainer input, 
+    #formContainer textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
     #formContainer button {
-      margin-top: 15px; padding: 10px; width: 100%;
-      background-color: #28a745; color: white; border: none; border-radius: 5px;
+      margin-top: 15px;
+      padding: 10px;
+      width: 100%;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
     }
-    #formContainer button:hover { background-color: #218838; }
+
+    #formContainer button:hover {
+      background-color: #218838;
+    }
 
     #closeForm {
-      position: absolute; top: 10px; right: 15px;
-      cursor: pointer; font-weight: bold; font-size: 20px; color: #333;
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 20px;
+      color: #333;
     }
 
     #mapMessage {
-      display: none; position: fixed; top: 10px; left: 50%;
+      display: none;
+      position: fixed;
+      top: 10px;
+      left: 50%;
       transform: translateX(-50%);
-      background: #ffc107; color: #333; padding: 10px 20px;
-      border-radius: 5px; z-index: 1002; font-weight: bold;
+      background: #ffc107;
+      color: #333;
+      padding: 10px 20px;
+      border-radius: 5px;
+      z-index: 1002;
+      font-weight: bold;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
   </style>
@@ -129,16 +162,21 @@
     }).addTo(map);
 
     fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
-      .then(res => res.json())
-      .then(data => map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12))
+      .then(response => response.json())
+      .then(data => {
+        if (data.length > 0) map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
+        else map.setView([32.533, -117.033], 12);
+      })
       .catch(() => map.setView([32.533, -117.033], 12));
 
     function createIcon(color) {
       return L.icon({
         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41], iconAnchor: [12, 41],
-        popupAnchor: [1, -34], shadowSize: [41, 41]
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
       });
     }
 
@@ -154,18 +192,31 @@
       const marker = L.marker([lat, lng], { icon }).addTo(map);
       let popupText = `<b>${street}</b><br>${descripcion}`;
       marker.bindPopup(popupText);
-      marker.on('dblclick', () => db.ref("reportes/" + key).remove() && map.removeLayer(marker));
+      marker.on('dblclick', () => {
+        map.removeLayer(marker);
+        db.ref("reportes/" + key).remove();
+      });
     }
 
-    // Cargar solo los reportes aprobados
     db.ref("reportes").once("value").then(snapshot => {
+      const reportCount = {};
       snapshot.forEach(child => {
         const data = child.val();
-        if(data.estado === "aprobado") {
-          const key = child.key;
-          const color = getMarkerColor(data.numReportes || 0);
-          addMarker(data.lat, data.lng, key, createIcon(color), data.street, data.description);
-        }
+        const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
+        if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
+        reportCount[keyCoords]++;
+      });
+
+      snapshot.forEach(child => {
+        const data = child.val();
+        const key = child.key;
+        const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
+        const count = reportCount[keyCoords];
+        const color = getMarkerColor(count);
+        const icon = createIcon(color);
+        const street = data.street || "Calle desconocida, Tijuana";
+        const descripcion = data.description || "";
+        addMarker(data.lat, data.lng, key, icon, street, descripcion);
       });
     });
 
@@ -192,37 +243,43 @@
       e.preventDefault();
       overlay.style.display = 'none';
       formContainer.style.display = 'none';
-      mapMessage.style.display = 'block';
+      mapMessage.style.display = 'block'; // muestra mensaje
       colocarMarcadorActivo = true;
     });
 
     map.on('click', function(ev){
       if(!colocarMarcadorActivo) return;
       colocarMarcadorActivo = false;
-      mapMessage.style.display = 'none';
+      mapMessage.style.display = 'none'; // oculta mensaje
 
       const { lat, lng } = ev.latlng;
       const problema = document.getElementById('problema').value;
       const descripcion = document.getElementById('descripcion').value;
 
-      // Guardar como PENDIENTE
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-        .then(res => res.json())
-        .then(data => {
-          const street = data.address?.road || 'Calle desconocida';
-          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
-          const fullStreet = `${street}, ${city}`;
+      function guardarYAgregar() {
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+          .then(res => res.json())
+          .then(data => {
+            const street = data.address?.road || 'Calle desconocida';
+            const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+            const fullStreet = `${street}, ${city}`;
 
-          db.ref("reportes").push({
-            lat, lng,
-            street: fullStreet,
-            description: `${problema}: ${descripcion}`,
-            estado: "pendiente"   // <-- importante
+            const newRef = db.ref("reportes").push({
+              lat, lng,
+              street: fullStreet,
+              description: `${problema}: ${descripcion}`
+            });
+
+            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`);
+
+            // Abrir Google Form en nueva pestaña
+            window.open('https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform', '_blank');
           });
+      }
 
-          alert("Tu reporte ha sido enviado y está pendiente de validación.");
-        });
+      guardarYAgregar();
     });
   </script>
 </body>
 </html>
+
