@@ -243,59 +243,61 @@
       formContainer.style.display = 'none';
     });
 
-    let colocarMarcadorActivo = false;
-
     formQueja.addEventListener('submit', (e) => {
       e.preventDefault();
       overlay.style.display = 'none';
       formContainer.style.display = 'none';
-      mapMessage.style.display = 'block'; // muestra mensaje
-      colocarMarcadorActivo = true;
-    });
+      mapMessage.style.display = 'block';
 
-    map.on('click', function(ev){
-      if(!colocarMarcadorActivo) return;
-      colocarMarcadorActivo = false;
-      mapMessage.style.display = 'none'; // oculta mensaje
-
-      const { lat, lng } = ev.latlng;
       const problema = document.getElementById('problema').value;
       const descripcion = document.getElementById('descripcion').value;
       const fotoFile = document.getElementById('foto').files[0];
       let fotoURL = "";
 
-      function guardarYAgregar() {
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-          .then(res => res.json())
-          .then(data => {
-            const street = data.address?.road || 'Calle desconocida';
-            const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
-            const fullStreet = `${street}, ${city}`;
+      function activarMarcador() {
+        map.once('click', function(ev){
+          mapMessage.style.display = 'none';
+          const { lat, lng } = ev.latlng;
 
-            const newRef = db.ref("reportes").push({
-              lat, lng,
-              street: fullStreet,
-              description: `${problema}: ${descripcion}`,
-              photoURL: fotoURL
-            });
+          function guardarYAgregar() {
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+              .then(res => res.json())
+              .then(data => {
+                const street = data.address?.road || 'Calle desconocida';
+                const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+                const fullStreet = `${street}, ${city}`;
 
-            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`, fotoURL);
-          });
-      }
+                const newRef = db.ref("reportes").push({
+                  lat, lng,
+                  street: fullStreet,
+                  description: `${problema}: ${descripcion}`,
+                  photoURL: fotoURL
+                });
 
-      if(fotoFile){
-        const storageRef = storage.ref().child(`fotos/${Date.now()}_${fotoFile.name}`);
-        fotoFile.arrayBuffer().then(buffer => {
-          storageRef.put(new Uint8Array(buffer)).then(() => {
-            storageRef.getDownloadURL().then(url => {
-              fotoURL = url;
-              guardarYAgregar();
-            });
-          });
+                addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`, fotoURL);
+              });
+          }
+
+          if(fotoFile){
+            const storageRef = storage.ref().child(`fotos/${Date.now()}_${fotoFile.name}`);
+            const reader = new FileReader();
+            reader.onload = function(evt){
+              const data = evt.target.result;
+              storageRef.put(new Uint8Array(data)).then(() => {
+                storageRef.getDownloadURL().then(url => {
+                  fotoURL = url;
+                  guardarYAgregar();
+                });
+              });
+            }
+            reader.readAsArrayBuffer(fotoFile);
+          } else {
+            guardarYAgregar();
+          }
         });
-      } else {
-        guardarYAgregar();
       }
+
+      activarMarcador();
     });
   </script>
 </body>
