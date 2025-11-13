@@ -11,55 +11,18 @@
     #map {
       height: 500px;
       width: 100%;
-      margin-top: 20px;
+      margin-top: 10px;
       border: 2px solid #333;
-      position: relative;
     }
 
-    /* Botón flotante */
     #btnAgregarQueja {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 1000;
       padding: 10px 15px;
       background-color: #28a745;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-    }
-
-    /* Modal formulario */
-    #modalFormulario {
-      display: none; /* oculto por defecto */
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.5);
-      z-index: 2000;
-      justify-content: center;
-      align-items: center;
-    }
-
-    #modalContenido {
-      background-color: white;
-      padding: 20px;
-      border-radius: 10px;
-      width: 300px;
-    }
-
-    #modalContenido textarea {
-      width: 100%;
-      resize: none;
-    }
-
-    #modalContenido button {
-      margin-top: 10px;
-      padding: 8px 12px;
-      cursor: pointer;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -67,20 +30,8 @@
   <h1>Centro de atención</h1>
   <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
 
-  <div id="map">
-    <button id="btnAgregarQueja">Agregar Queja</button>
-  </div>
-
-  <!-- Modal formulario -->
-  <div id="modalFormulario">
-    <div id="modalContenido">
-      <h3>Descripción de la queja</h3>
-      <textarea id="descripcionQueja" rows="4" placeholder="Escribe tu queja aquí..."></textarea>
-      <br>
-      <button id="btnEnviar">Enviar</button>
-      <button id="btnCancelar">Cancelar</button>
-    </div>
-  </div>
+  <button id="btnAgregarQueja">Agregar Queja</button>
+  <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
@@ -158,7 +109,7 @@
       });
     }
 
-    // Cargar marcadores
+    // Cargar marcadores existentes
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
       snapshot.forEach(child => {
@@ -181,56 +132,32 @@
       });
     });
 
-    // Manejo de botón y modal
+    // Botón para agregar un marcador
     const btnAgregar = document.getElementById("btnAgregarQueja");
-    const modal = document.getElementById("modalFormulario");
-    const btnEnviar = document.getElementById("btnEnviar");
-    const btnCancelar = document.getElementById("btnCancelar");
-    const descripcionInput = document.getElementById("descripcionQueja");
-
-    let clickLatLng = null;
 
     btnAgregar.addEventListener("click", () => {
-      alert("Haz clic en el mapa para seleccionar el lugar de tu queja.");
+      alert("Haz clic en el mapa para colocar tu queja.");
+      // Permitir solo un marcador
       map.once("click", function(e) {
-        clickLatLng = e.latlng;
-        modal.style.display = "flex";
+        const { lat, lng } = e.latlng;
+        const descripcion = prompt("Escribe la descripción de tu queja:");
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+          .then(res => res.json())
+          .then(data => {
+            const street = data.address?.road || 'Calle desconocida';
+            const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+            const fullStreet = `${street}, ${city}`;
+
+            const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet, description: descripcion });
+            addMarker(lat, lng, newRef.key, createIcon('green'), fullStreet, descripcion);
+          })
+          .catch(err => {
+            console.error(err);
+            const newRef = db.ref("reportes").push({ lat, lng, street: "Calle desconocida, Tijuana", description: descripcion });
+            addMarker(lat, lng, newRef.key, createIcon('green'), "Calle desconocida, Tijuana", descripcion);
+          });
       });
-    });
-
-    btnCancelar.addEventListener("click", () => {
-      modal.style.display = "none";
-      descripcionInput.value = "";
-    });
-
-    btnEnviar.addEventListener("click", () => {
-      if(!clickLatLng) return;
-      const { lat, lng } = clickLatLng;
-      const descripcion = descripcionInput.value || "";
-
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-        .then(res => res.json())
-        .then(data => {
-          const street = data.address?.road || 'Calle desconocida';
-          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
-          const fullStreet = `${street}, ${city}`;
-
-          const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet, description: descripcion });
-          addMarker(lat, lng, newRef.key, createIcon('green'), fullStreet, descripcion);
-
-          modal.style.display = "none";
-          descripcionInput.value = "";
-          clickLatLng = null;
-        })
-        .catch(err => {
-          console.error(err);
-          const newRef = db.ref("reportes").push({ lat, lng, street: "Calle desconocida, Tijuana", description: descripcion });
-          addMarker(lat, lng, newRef.key, createIcon('green'), "Calle desconocida, Tijuana", descripcion);
-
-          modal.style.display = "none";
-          descripcionInput.value = "";
-          clickLatLng = null;
-        });
     });
   </script>
 </body>
