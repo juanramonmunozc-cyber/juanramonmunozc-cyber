@@ -42,12 +42,30 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Crear mapa
-    const map = L.map('map').setView([32.533, -117.033], 12);
+    // Inicializar mapa sin posición
+    const map = L.map('map');
 
+    // Agregar tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+
+    // Centrar mapa en Tijuana usando Nominatim
+    fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
+      .then(response => response.json())
+      .then(data => {
+        if (data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lon = parseFloat(data[0].lon);
+          map.setView([lat, lon], 12);
+        } else {
+          map.setView([32.533, -117.033], 12);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        map.setView([32.533, -117.033], 12);
+      });
 
     // Crear icono de color
     function createIcon(color) {
@@ -61,32 +79,32 @@
       });
     }
 
-    // Definir color según cantidad de reportes
+    // Color según cantidad de reportes
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
       if (count >= 3) return 'orange';
-      return 'blue';
+      return 'green';
     }
 
-    // Redondear coordenadas para agrupar reportes cercanos
+    // Redondear coordenadas para agrupar reportes
     function roundCoord(num) {
       return Math.round(num * 1000) / 1000;
     }
 
-    // Obtener dirección usando Nominatim
+    // Obtener dirección con Nominatim
     function getAddress(lat, lng, callback) {
       const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
       fetch(url)
         .then(response => response.json())
         .then(data => {
-          const street = data.address?.road || '';
-          const city = data.address?.city || data.address?.town || data.address?.village || '';
-          const address = street && city ? `${street}, ${city}` : data.display_name;
+          const street = data.address?.road || 'Calle desconocida';
+          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+          const address = `${street}, ${city}`;
           callback(address);
         })
         .catch(err => {
           console.error('Error al obtener dirección:', err);
-          callback("Dirección no disponible");
+          callback("Calle desconocida, Tijuana");
         });
     }
 
@@ -97,10 +115,8 @@
       getAddress(lat, lng, (address) => {
         marker.bindPopup(`
           <b>Reporte</b><br>
-          Calle: ${address}<br>
-          Lat: ${lat.toFixed(4)}<br>
-          Lng: ${lng.toFixed(4)}
-        `).openPopup();
+          Calle: ${address}
+        `);
       });
 
       // Doble clic elimina marcador y Firebase
@@ -110,12 +126,8 @@
       });
     }
 
-    // Cargar marcadores desde Firebase
-    db.ref("reportes").on("value", snapshot => {
-      map.eachLayer(layer => {
-        if (layer instanceof L.Marker) map.removeLayer(layer);
-      });
-
+    // Cargar TODOS los marcadores de Firebase al iniciar
+    db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
       snapshot.forEach(child => {
         const data = child.val();
@@ -135,12 +147,12 @@
       });
     });
 
-    // Agregar marcador al hacer clic solo si no es sobre un marcador
+    // Agregar marcador solo si se hace clic sobre mapa vacío
     map.on('click', function(e) {
-      if (e.originalEvent.target.tagName === 'DIV') {
+      if (!e.originalEvent.target.classList.contains('leaflet-marker-icon')) {
         const { lat, lng } = e.latlng;
         const newRef = db.ref("reportes").push({ lat, lng });
-        addMarker(lat, lng, newRef.key, createIcon('blue'));
+        addMarker(lat, lng, newRef.key, createIcon('green'));
         window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
       }
     });
