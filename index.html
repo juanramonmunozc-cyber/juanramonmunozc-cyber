@@ -65,7 +65,7 @@
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
       if (count >= 3) return 'orange';
-      return 'green';
+      return 'blue';
     }
 
     // Redondear coordenadas para agrupar reportes cercanos
@@ -103,6 +103,7 @@
         `).openPopup();
       });
 
+      // Doble clic elimina marcador y Firebase
       marker.on('dblclick', () => {
         map.removeLayer(marker);
         db.ref("reportes/" + key).remove();
@@ -134,12 +135,14 @@
       });
     });
 
-    // Agregar marcador al hacer clic
-    map.on('click', e => {
-      const { lat, lng } = e.latlng;
-      const newRef = db.ref("reportes").push({ lat, lng });
-      addMarker(lat, lng, newRef.key, createIcon('green'));
-      window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
+    // Agregar marcador al hacer clic solo si no es sobre un marcador
+    map.on('click', function(e) {
+      if (e.originalEvent.target.tagName === 'DIV') {
+        const { lat, lng } = e.latlng;
+        const newRef = db.ref("reportes").push({ lat, lng });
+        addMarker(lat, lng, newRef.key, createIcon('blue'));
+        window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
+      }
     });
   </script>
 </body>
