@@ -29,6 +29,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
 
   <script>
+    // Configuración Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
       authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
@@ -43,32 +44,45 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Crear mapa
     const map = L.map('map').setView([32.533, -117.033], 12);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    function addMarker(lat, lng) {
+    // Función para agregar marcador con ID de Firebase
+    function addMarker(lat, lng, key) {
       const marker = L.marker([lat, lng]).addTo(map);
       marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
-      marker.on('dblclick', () => map.removeLayer(marker));
+
+      // Doble clic para eliminar marcador del mapa y Firebase
+      marker.on('dblclick', () => {
+        map.removeLayer(marker);
+        db.ref("reportes/" + key).remove();
+      });
     }
 
+    // Cargar marcadores desde Firebase
     db.ref("reportes").on("value", snapshot => {
+      // Quitar marcadores existentes
       map.eachLayer(layer => {
         if (layer instanceof L.Marker) map.removeLayer(layer);
       });
+
+      // Dibujar nuevos marcadores
       snapshot.forEach(child => {
         const data = child.val();
-        addMarker(data.lat, data.lng);
+        const key = child.key;
+        addMarker(data.lat, data.lng, key);
       });
     });
 
+    // Agregar marcador al hacer clic en el mapa
     map.on('click', e => {
       const { lat, lng } = e.latlng;
-      addMarker(lat, lng);
-      db.ref("reportes").push({ lat, lng });
+      const newRef = db.ref("reportes").push({ lat, lng });
+      addMarker(lat, lng, newRef.key);
       window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
     });
   </script>
