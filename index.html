@@ -155,7 +155,7 @@
       });
       snapshot.forEach(child => {
         const data = child.val();
-        addMarker(data.lat, data.lng, child.key, "green", data.street || "Calle desconocida", data.description || "");
+        addMarker(data.lat, data.lng, child.key, "blue", data.street || "Calle desconocida", data.description || "");
       });
     });
 
@@ -201,7 +201,7 @@
             street: fullStreet,
             description: descripcion
           });
-          addMarker(tempCoords.lat, tempCoords.lng, newRef.key, "green", fullStreet, descripcion);
+          addMarker(tempCoords.lat, tempCoords.lng, newRef.key, "blue", fullStreet, descripcion);
 
           modal.style.display = "none";
           txtDescripcion.value = "";
