@@ -42,7 +42,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Inicializar mapa sin posición
+    // Inicializar mapa
     const map = L.map('map');
 
     // Agregar tiles
@@ -116,7 +116,7 @@
         marker.bindPopup(`
           <b>Reporte</b><br>
           Calle: ${address}
-        `);
+        `); // ❌ No usamos openPopup para evitar que el mapa se mueva
       });
 
       // Doble clic elimina marcador y Firebase
@@ -159,3 +159,4 @@
   </script>
 </body>
 </html>
+
