@@ -12,6 +12,7 @@
 <h1>Detalle del Reporte</h1>
 <div id="reporte"></div>
 
+<h3>Agregar comentario/foto</h3>
 <input type="file" id="fotoInput" />
 <textarea id="comentario" placeholder="Agregar comentario"></textarea>
 <button id="enviarComentario">Enviar</button>
@@ -30,7 +31,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const storage = firebase.storage();
 
-// Obtener el key del reporte de la URL
+// Obtener el key del reporte desde la URL
 const urlParams = new URLSearchParams(window.location.search);
 const key = urlParams.get('key');
 
@@ -40,7 +41,7 @@ function cargarReporte() {
     if(!data) { document.getElementById('reporte').innerText = "Reporte no encontrado"; return; }
 
     let html = `<h2>${data.street}</h2>`;
-    html += `<p>${data.description}</p>`;
+    html += `<p><b>Problema y descripción:</b> ${data.description}</p>`;
     html += `<p><b>Estado:</b> ${data.status}</p>`;
 
     if(data.photos) data.photos.forEach(url => {
@@ -57,9 +58,11 @@ function cargarReporte() {
 
 cargarReporte();
 
+// Subir comentarios y fotos
 document.getElementById('enviarComentario').addEventListener('click', () => {
   const comentario = document.getElementById('comentario').value;
   const fotoInput = document.getElementById('fotoInput');
+
   if(comentario) db.ref("reportes/" + key + "/updates").push(comentario);
 
   if(fotoInput.files.length > 0){
