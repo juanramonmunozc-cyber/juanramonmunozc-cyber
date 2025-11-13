@@ -175,7 +175,7 @@
 
     function addMarker(lat, lng, key, icon, street, descripcion="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-      let popupText = `<b>"Reporte en"${street}</b><br>${descripcion}<a href="https://store.steampowered.com">queja</a>`;
+      let popupText = `<b>"Reporte en"${street}</b><br>${descripcion}<br><a href="https://store.steampowered.com">queja</a>`;
       marker.bindPopup(popupText);
       marker.on('dblclick', () => {
         map.removeLayer(marker);
