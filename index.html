@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CESPT - Atención Ciudadana</title>
 
+  <!-- ÍCONOS DEL SITIO -->
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <!-- ESTILOS Y LIBRERÍAS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
   <style>
@@ -102,13 +110,8 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
   </style>
-  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="shortcut icon" href="/favicon.ico">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="manifest" href="/site.webmanifest">
-
 </head>
+
 <body>
   <h1>Centro de atención</h1>
   <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
@@ -159,8 +162,6 @@
         else map.setView([32.533, -117.033], 12);
       })
       .catch(() => map.setView([32.533, -117.033], 12));
-
-      
 
     function createIcon(color) {
       return L.icon({
@@ -253,7 +254,6 @@
       const problema = document.getElementById('problema').value;
       const descripcion = document.getElementById('descripcion').value;
 
-      // Abre la nueva pestaña primero para evitar bloqueos en móviles
       const nuevaPestaña = window.open('', '_blank');
 
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
