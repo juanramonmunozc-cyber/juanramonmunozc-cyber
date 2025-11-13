@@ -56,7 +56,9 @@
       z-index: 1000;
     }
 
-    #formContainer h3 { margin-top: 0; }
+    #formContainer h3 {
+      margin-top: 0;
+    }
 
     #formContainer label {
       font-weight: bold;
@@ -84,7 +86,9 @@
       cursor: pointer;
     }
 
-    #formContainer button:hover { background-color: #218838; }
+    #formContainer button:hover {
+      background-color: #218838;
+    }
 
     #closeForm {
       position: absolute;
@@ -152,7 +156,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const map = L.map('map', { tap: true });
+    const map = L.map('map');
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
@@ -186,7 +190,7 @@
 
     function addMarker(lat, lng, key, icon, street, descripcion="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-      let popupText = `<b>${street}</b><br>${descripcion}`;
+      const popupText = `<b>${street}</b><br>${descripcion}`;
       marker.bindPopup(popupText);
       marker.on('dblclick', () => {
         map.removeLayer(marker);
@@ -239,21 +243,38 @@
       e.preventDefault();
       overlay.style.display = 'none';
       formContainer.style.display = 'none';
-      mapMessage.style.display = 'block';
+      mapMessage.style.display = 'block'; // muestra mensaje de verificación
       colocarMarcadorActivo = true;
     });
 
-    function colocarMarcador(ev) {
+    map.on('click', function(ev){
       if(!colocarMarcadorActivo) return;
       colocarMarcadorActivo = false;
-      mapMessage.style.display = 'none';
 
-      // Abrir Google Form al hacer click/tap
-      window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
-    }
+      const { lat, lng } = ev.latlng;
+      const problema = document.getElementById('problema').value;
+      const descripcion = document.getElementById('descripcion').value;
 
-    map.on('click', colocarMarcador);
-    map.on('touchend', colocarMarcador); // para móviles
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+        .then(res => res.json())
+        .then(data => {
+          const street = data.address?.road || 'Calle desconocida';
+          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+          const fullStreet = `${street}, ${city}`;
+
+          const newRef = db.ref("reportes").push({
+            lat, lng,
+            street: fullStreet,
+            description: `${problema}: ${descripcion}`,
+            status: "pendiente"
+          });
+
+          addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`);
+
+          // Abrir Google Form en otra pestaña
+          window.open('https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform', '_blank');
+        });
+    });
   </script>
 </body>
 </html>
