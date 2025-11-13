@@ -56,9 +56,7 @@
       z-index: 1000;
     }
 
-    #formContainer h3 {
-      margin-top: 0;
-    }
+    #formContainer h3 { margin-top: 0; }
 
     #formContainer label {
       font-weight: bold;
@@ -86,9 +84,7 @@
       cursor: pointer;
     }
 
-    #formContainer button:hover {
-      background-color: #218838;
-    }
+    #formContainer button:hover { background-color: #218838; }
 
     #closeForm {
       position: absolute;
@@ -123,7 +119,7 @@
   <div id="map"></div>
   <button id="btnAgregarQueja">Agregar Queja</button>
   <div id="overlay"></div>
-  <div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
+  <div id="mapMessage">Se está verificando su queja</div>
 
   <div id="formContainer">
     <span id="closeForm">&times;</span>
@@ -156,7 +152,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const map = L.map('map');
+    const map = L.map('map', { tap: true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
@@ -237,32 +233,27 @@
       formContainer.style.display = 'none';
     });
 
+    let colocarMarcadorActivo = false;
+
     formQueja.addEventListener('submit', (e) => {
       e.preventDefault();
       overlay.style.display = 'none';
       formContainer.style.display = 'none';
-
-      // Mensaje de verificación
-      alert("Se está verificando su queja. Una vez aprobada aparecerá en el mapa.");
-
-      // Redirigir al formulario de Google
-      window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
-
-      // Guardar en Firebase como pendiente
-      const problema = document.getElementById('problema').value;
-      const descripcion = document.getElementById('descripcion').value;
-
-      db.ref("pendientes").push({
-        problema,
-        descripcion,
-        aprobado: false,
-        fecha: Date.now()
-      });
-
-      // Limpiar el formulario
-      formQueja.reset();
+      mapMessage.style.display = 'block';
+      colocarMarcadorActivo = true;
     });
+
+    function colocarMarcador(ev) {
+      if(!colocarMarcadorActivo) return;
+      colocarMarcadorActivo = false;
+      mapMessage.style.display = 'none';
+
+      // Abrir Google Form al hacer click/tap
+      window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
+    }
+
+    map.on('click', colocarMarcador);
+    map.on('touchend', colocarMarcador); // para móviles
   </script>
 </body>
 </html>
-
