@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CESPT - Atención Ciudadana</title>
 
-  <!-- Estilos de Leaflet -->
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
   <style>
     #map {
       height: 500px;
@@ -19,77 +20,68 @@
 <body>
   <h1>Centro de atención</h1>
   <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
+
   <div id="map"></div>
 
-  <!-- Librerías -->
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js"></script>
 
   <script>
-    // --- 🔹 CONFIGURACIÓN DE FIREBASE ---
-     const firebaseConfig = {
-    apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
-    authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
-    databaseURL: "https://mapa-de-quejas-e5354-default-rtdb.firebaseio.com",
-    projectId: "mapa-de-quejas-e5354",
-    storageBucket: "mapa-de-quejas-e5354.firebasestorage.app",
-    messagingSenderId: "1098104212670",
-    appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef",
-    measurementId: "G-XJ015E8YWX"
-  };
+    // 🔧 Configura con tus credenciales de Firebase
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_DOMINIO.firebaseapp.com",
+      databaseURL: "https://TU_DOMINIO.firebaseio.com",
+      projectId: "TU_PROYECTO_ID",
+      storageBucket: "TU_PROYECTO.appspot.com",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
 
     // Inicializar Firebase
     const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const db = firebase.database(app);
 
-    // --- 🔹 MAPA ---
+    // 🗺️ Crear el mapa centrado en Tijuana
     const map = L.map('map').setView([32.533, -117.033], 12);
 
+    // Cargar los tiles de OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // --- 🔹 FUNCIÓN PARA AGREGAR MARCADOR ---
-    function addMarker(lat, lng, tipo = "Reporte ciudadano") {
+    // 🔹 Agregar marcador
+    function addMarker(lat, lng) {
       const marker = L.marker([lat, lng]).addTo(map);
-      marker.bindPopup(`<b>${tipo}</b><br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
+      marker.bindPopup(`Reporte en:<br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`).openPopup();
 
-      // Doble clic para eliminar localmente
-      marker.on('dblclick', () => map.removeLayer(marker));
+      // Doble clic para eliminar
+      marker.on('dblclick', function() {
+        map.removeLayer(marker);
+      });
     }
 
-    // --- 🔹 CARGAR REPORTES EXISTENTES ---
-    db.ref("reportes").on("value", (snapshot) => {
-      map.eachLayer((layer) => {
+    // 🔹 Cargar los reportes desde Firebase
+    db.ref("reportes").on("value", snapshot => {
+      map.eachLayer(layer => {
         if (layer instanceof L.Marker) map.removeLayer(layer);
       });
-
-      snapshot.forEach((data) => {
-        const r = data.val();
-        addMarker(r.lat, r.lng, r.tipo);
+      snapshot.forEach(child => {
+        const data = child.val();
+        addMarker(data.lat, data.lng);
       });
     });
 
-    // --- 🔹 AGREGAR NUEVO REPORTE ---
-    map.on('click', (event) => {
-      const { lat, lng } = event.latlng;
-
-      // Guardar en Firebase
-      const nuevoReporte = {
-        tipo: "Fuga de agua",
-        lat: lat,
-        lng: lng,
-        fecha: new Date().toLocaleString()
-      };
-      db.ref("reportes").push(nuevoReporte);
-
-      // Mostrar marcador local
-      addMarker(lat, lng, "Nuevo reporte");
-
-      // Abrir Google Form (opcional)
-      const googleFormUrl = "https://forms.gle/rBszFR2RCtNLAEX18";
-      window.open(googleFormUrl, "_blank");
+    // 🔹 Guardar nuevo reporte al hacer clic
+    map.on('click', function(e) {
+      const { lat, lng } = e.latlng;
+      addMarker(lat, lng);
+      db.ref("reportes").push({ lat, lng });
+      window.open("https://forms.gle/rBszFR2RCtNLAEX18", "_blank");
     });
   </script>
 </body>
