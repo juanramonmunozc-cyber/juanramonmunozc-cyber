@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
   <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
     #map {
       height: 500px;
       width: 100%;
@@ -15,14 +19,91 @@
       border: 2px solid #333;
     }
 
+    /* Botón flotante */
     #btnAgregarQueja {
-      padding: 10px 15px;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0px 4px 6px rgba(0,0,0,0.3);
+      font-size: 16px;
+    }
+
+    #btnAgregarQueja:hover {
+      background-color: #0056b3;
+    }
+
+    /* Fondo oscuro */
+    #overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 999;
+    }
+
+    /* Formulario centrado */
+    #formContainer {
+      display: none;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      width: 350px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+
+    #formContainer h3 {
+      margin-top: 0;
+    }
+
+    #formContainer label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+
+    #formContainer input, 
+    #formContainer textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    #formContainer button {
+      margin-top: 15px;
+      padding: 10px;
+      width: 100%;
       background-color: #28a745;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      margin-bottom: 10px;
+    }
+
+    #formContainer button:hover {
+      background-color: #218838;
+    }
+
+    #closeForm {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 20px;
+      color: #333;
     }
   </style>
 </head>
@@ -30,8 +111,31 @@
   <h1>Centro de atención</h1>
   <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
 
-  <button id="btnAgregarQueja">Agregar Queja</button>
   <div id="map"></div>
+
+  <!-- Botón flotante -->
+  <button id="btnAgregarQueja">Agregar Queja</button>
+
+  <!-- Fondo oscuro -->
+  <div id="overlay"></div>
+
+  <!-- Formulario flotante -->
+  <div id="formContainer">
+    <span id="closeForm">&times;</span>
+    <h3>Nueva Queja</h3>
+    <form id="formQueja">
+      <label>Problema:</label>
+      <input type="text" id="problema" placeholder="Ej. Fuga de agua" required>
+
+      <label>Descripción:</label>
+      <textarea id="descripcion" rows="3" placeholder="Describe el problema..." required></textarea>
+
+      <label>Foto:</label>
+      <input type="file" id="foto" accept="image/*">
+
+      <button type="submit">Enviar Queja</button>
+    </form>
+  </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
@@ -59,24 +163,15 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Centrar mapa en Tijuana
+    // Centrar en Tijuana
     fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
-      .then(response => response.json())
+      .then(res => res.json())
       .then(data => {
-        if (data.length > 0) {
-          const lat = parseFloat(data[0].lat);
-          const lon = parseFloat(data[0].lon);
-          map.setView([lat, lon], 12);
-        } else {
-          map.setView([32.533, -117.033], 12);
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        map.setView([32.533, -117.033], 12);
+        if (data.length > 0) map.setView([data[0].lat, data[0].lon], 12);
+        else map.setView([32.533, -117.033], 12);
       });
 
-    // Iconos
+    // Crear iconos
     function createIcon(color) {
       return L.icon({
         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
@@ -88,10 +183,11 @@
       });
     }
 
+    // Cambio de color dependiendo de número de quejas
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
       if (count >= 3) return 'orange';
-      return 'green';
+      return 'blue'; // 🔵 Ahora azul por defecto
     }
 
     function roundCoord(num) {
@@ -100,8 +196,8 @@
 
     function addMarker(lat, lng, key, icon, street, descripcion="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-      let popupText = `<b>Reporte</b><br>Calle: ${street}`;
-      if(descripcion) popupText += `<br>Descripción: ${descripcion}`;
+      let popupText = `<b>${street}</b>`;
+      if (descripcion) popupText += `<br>${descripcion}`;
       marker.bindPopup(popupText);
       marker.on('dblclick', () => {
         map.removeLayer(marker);
@@ -109,7 +205,7 @@
       });
     }
 
-    // Cargar marcadores existentes
+    // Mostrar marcadores guardados
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
       snapshot.forEach(child => {
@@ -132,34 +228,47 @@
       });
     });
 
-    // Botón para agregar un marcador
-    const btnAgregar = document.getElementById("btnAgregarQueja");
+    // Elementos del formulario
+    const overlay = document.getElementById('overlay');
+    const formContainer = document.getElementById('formContainer');
+    const closeForm = document.getElementById('closeForm');
+    const formQueja = document.getElementById('formQueja');
+    const btnAgregar = document.getElementById('btnAgregarQueja');
 
-    btnAgregar.addEventListener("click", () => {
+    btnAgregar.addEventListener('click', () => {
+      overlay.style.display = 'block';
+      formContainer.style.display = 'block';
+    });
+
+    closeForm.addEventListener('click', () => {
+      overlay.style.display = 'none';
+      formContainer.style.display = 'none';
+    });
+
+    // Enviar formulario
+    formQueja.addEventListener('submit', (e) => {
+      e.preventDefault();
       alert("Haz clic en el mapa para colocar tu queja.");
-      // Permitir solo un marcador
-      map.once("click", function(e) {
-        const { lat, lng } = e.latlng;
-        const descripcion = prompt("Escribe la descripción de tu queja:");
+      overlay.style.display = 'none';
+      formContainer.style.display = 'none';
+
+      map.once('click', (ev) => {
+        const { lat, lng } = ev.latlng;
+        const problema = document.getElementById('problema').value;
+        const descripcion = document.getElementById('descripcion').value;
 
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
           .then(res => res.json())
           .then(data => {
             const street = data.address?.road || 'Calle desconocida';
-            const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+            const city = data.address?.city || data.address?.town || 'Tijuana';
             const fullStreet = `${street}, ${city}`;
 
-            const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet, description: descripcion });
-            addMarker(lat, lng, newRef.key, createIcon('green'), fullStreet, descripcion);
-          })
-          .catch(err => {
-            console.error(err);
-            const newRef = db.ref("reportes").push({ lat, lng, street: "Calle desconocida, Tijuana", description: descripcion });
-            addMarker(lat, lng, newRef.key, createIcon('green'), "Calle desconocida, Tijuana", descripcion);
+            const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet, description: `${problema}: ${descripcion}` });
+            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`);
           });
       });
     });
   </script>
 </body>
 </html>
-
