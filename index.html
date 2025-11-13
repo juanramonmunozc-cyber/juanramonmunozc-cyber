@@ -91,7 +91,7 @@
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
       if (count >= 3) return 'orange';
-      return 'green';
+      return 'blue';
     }
 
     function roundCoord(num) {
@@ -150,12 +150,12 @@
             const fullStreet = `${street}, ${city}`;
 
             const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet, description: descripcion });
-            addMarker(lat, lng, newRef.key, createIcon('green'), fullStreet, descripcion);
+            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, descripcion);
           })
           .catch(err => {
             console.error(err);
             const newRef = db.ref("reportes").push({ lat, lng, street: "Calle desconocida, Tijuana", description: descripcion });
-            addMarker(lat, lng, newRef.key, createIcon('green'), "Calle desconocida, Tijuana", descripcion);
+            addMarker(lat, lng, newRef.key, createIcon('blue'), "Calle desconocida, Tijuana", descripcion);
           });
       });
     });
