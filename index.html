@@ -154,6 +154,8 @@
       })
       .catch(() => map.setView([32.533, -117.033], 12));
 
+      
+
     function createIcon(color) {
       return L.icon({
         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
@@ -164,6 +166,9 @@
         shadowSize: [41, 41]
       });
     }
+
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/565/565547.png"></link>
+
 
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
