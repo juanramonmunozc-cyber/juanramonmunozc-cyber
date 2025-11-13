@@ -19,45 +19,100 @@
       position: fixed;
       bottom: 20px;
       right: 20px;
-      padding: 12px 18px;
-      background-color: #28a745;
+      padding: 15px 20px;
+      background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 50px;
       cursor: pointer;
-      font-weight: bold;
+      box-shadow: 0px 4px 6px rgba(0,0,0,0.3);
+      font-size: 16px;
+      z-index: 1001;
     }
 
-    #formularioFlotante {
+    #btnAgregarQueja:hover {
+      background-color: #0056b3;
+    }
+
+    #overlay {
       display: none;
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.3);
-      z-index: 1000;
-      width: 300px;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 999;
     }
 
-    #formularioFlotante input, #formularioFlotante textarea {
+    #formContainer {
+      display: none;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      width: 350px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+
+    #formContainer h3 {
+      margin-top: 0;
+    }
+
+    #formContainer label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+
+    #formContainer input, 
+    #formContainer textarea {
       width: 100%;
-      margin-bottom: 10px;
       padding: 8px;
+      margin-top: 5px;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
 
-    #formularioFlotante button {
-      background-color: #007bff;
+    #formContainer button {
+      margin-top: 15px;
+      padding: 10px;
+      width: 100%;
+      background-color: #28a745;
       color: white;
       border: none;
-      padding: 10px;
       border-radius: 5px;
       cursor: pointer;
-      width: 100%;
+    }
+
+    #formContainer button:hover {
+      background-color: #218838;
+    }
+
+    #closeForm {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 20px;
+      color: #333;
+    }
+
+    #mapMessage {
+      display: none;
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffc107;
+      color: #333;
+      padding: 10px 20px;
+      border-radius: 5px;
+      z-index: 1002;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
   </style>
 </head>
@@ -65,17 +120,24 @@
   <h1>Centro de atención</h1>
   <h2>Módulo de atención: Quejas, ayudas y reportes</h2>
 
-  <button id="btnAgregarQueja">Agregar Queja</button>
-
-  <div id="formularioFlotante">
-    <h3>Nueva Queja</h3>
-    <input type="text" id="problema" placeholder="Título del problema" required>
-    <textarea id="descripcion" placeholder="Descripción del problema" rows="3" required></textarea>
-    <input type="file" id="foto" accept="image/*">
-    <button id="enviarQueja">Enviar</button>
-  </div>
-
   <div id="map"></div>
+  <button id="btnAgregarQueja">Agregar Queja</button>
+  <div id="overlay"></div>
+  <div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
+
+  <div id="formContainer">
+    <span id="closeForm">&times;</span>
+    <h3>Nueva Queja</h3>
+    <form id="formQueja">
+      <label>Problema:</label>
+      <input type="text" id="problema" placeholder="Ej. Fuga de agua" required>
+      <label>Descripción:</label>
+      <textarea id="descripcion" rows="3" placeholder="Describe el problema..." required></textarea>
+      <label>Foto:</label>
+      <input type="file" id="foto" accept="image/*">
+      <button type="submit">Enviar Queja</button>
+    </form>
+  </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
@@ -83,7 +145,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-storage-compat.js"></script>
 
   <script>
-    // Configuración Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
       authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
@@ -107,11 +168,8 @@
     fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
       .then(response => response.json())
       .then(data => {
-        if (data.length > 0) {
-          map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
-        } else {
-          map.setView([32.533, -117.033], 12);
-        }
+        if (data.length > 0) map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
+        else map.setView([32.533, -117.033], 12);
       })
       .catch(() => map.setView([32.533, -117.033], 12));
 
@@ -132,16 +190,17 @@
       return 'blue';
     }
 
-    function roundCoord(num) {
-      return Math.round(num * 1000) / 1000;
-    }
+    function roundCoord(num) { return Math.round(num * 1000) / 1000; }
 
-    function addMarker(lat, lng, key, icon, street, descripcion="", foto="") {
+    function addMarker(lat, lng, key, icon, street, descripcion="", fotoURL="") {
       const marker = L.marker([lat, lng], { icon }).addTo(map);
-      let popupText = `<b>Reporte</b><br>Calle: ${street}`;
-      if(descripcion) popupText += `<br>Descripción: ${descripcion}`;
-      if(foto) popupText += `<br><img src="${foto}" width="200" style="margin-top:5px;border-radius:5px;">`;
+      let popupText = `<b>${street}</b><br>${descripcion}`;
+      if(fotoURL) popupText += `<br><img src="${fotoURL}" style="width:100%; max-width:200px; margin-top:5px; border-radius:8px;">`;
       marker.bindPopup(popupText);
+      marker.on('dblclick', () => {
+        map.removeLayer(marker);
+        db.ref("reportes/" + key).remove();
+      });
     }
 
     db.ref("reportes").once("value").then(snapshot => {
@@ -160,47 +219,83 @@
         const count = reportCount[keyCoords];
         const color = getMarkerColor(count);
         const icon = createIcon(color);
-        addMarker(data.lat, data.lng, key, icon, data.street || "Calle desconocida", data.description || "", data.foto || "");
+        const street = data.street || "Calle desconocida, Tijuana";
+        const descripcion = data.description || "";
+        const fotoURL = data.photoURL || "";
+        addMarker(data.lat, data.lng, key, icon, street, descripcion, fotoURL);
       });
     });
 
-    const btnAgregar = document.getElementById("btnAgregarQueja");
-    const form = document.getElementById("formularioFlotante");
-    const enviarBtn = document.getElementById("enviarQueja");
+    const overlay = document.getElementById('overlay');
+    const formContainer = document.getElementById('formContainer');
+    const closeForm = document.getElementById('closeForm');
+    const formQueja = document.getElementById('formQueja');
+    const btnAgregar = document.getElementById('btnAgregarQueja');
+    const mapMessage = document.getElementById('mapMessage');
 
-    btnAgregar.addEventListener("click", () => {
-      form.style.display = "block";
+    btnAgregar.addEventListener('click', () => {
+      overlay.style.display = 'block';
+      formContainer.style.display = 'block';
     });
 
-    enviarBtn.addEventListener("click", async () => {
-      const problema = document.getElementById("problema").value;
-      const descripcion = document.getElementById("descripcion").value;
-      const foto = document.getElementById("foto").files[0];
+    closeForm.addEventListener('click', () => {
+      overlay.style.display = 'none';
+      formContainer.style.display = 'none';
+    });
+
+    let colocarMarcadorActivo = false;
+
+    formQueja.addEventListener('submit', (e) => {
+      e.preventDefault();
+      overlay.style.display = 'none';
+      formContainer.style.display = 'none';
+      mapMessage.style.display = 'block'; // muestra mensaje
+      colocarMarcadorActivo = true;
+    });
+
+    map.on('click', function(ev){
+      if(!colocarMarcadorActivo) return;
+      colocarMarcadorActivo = false;
+      mapMessage.style.display = 'none'; // oculta mensaje
+
+      const { lat, lng } = ev.latlng;
+      const problema = document.getElementById('problema').value;
+      const descripcion = document.getElementById('descripcion').value;
+      const fotoFile = document.getElementById('foto').files[0];
       let fotoURL = "";
 
-      if (foto) {
-        const storageRef = storage.ref('fotos/' + Date.now() + '-' + foto.name);
-        await storageRef.put(foto);
-        fotoURL = await storageRef.getDownloadURL();
-      }
-
-      form.style.display = "none";
-      alert("Haz clic en el mapa para colocar tu queja.");
-
-      // 🔵 Esta parte reactiva el clic para colocar el marcador después del formulario
-      map.once("click", function(e) {
-        const { lat, lng } = e.latlng;
+      function guardarYAgregar() {
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
           .then(res => res.json())
           .then(data => {
             const street = data.address?.road || 'Calle desconocida';
-            const city = data.address?.city || 'Tijuana';
+            const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
             const fullStreet = `${street}, ${city}`;
-            const newRef = db.ref("reportes").push({ lat, lng, street: fullStreet, description: descripcion, foto: fotoURL });
-            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, descripcion, fotoURL);
-          })
-          .catch(err => console.error(err));
-      });
+
+            const newRef = db.ref("reportes").push({
+              lat, lng,
+              street: fullStreet,
+              description: `${problema}: ${descripcion}`,
+              photoURL: fotoURL
+            });
+
+            addMarker(lat, lng, newRef.key, createIcon('blue'), fullStreet, `${problema}: ${descripcion}`, fotoURL);
+          });
+      }
+
+      if(fotoFile){
+        const storageRef = storage.ref().child(`fotos/${Date.now()}_${fotoFile.name}`);
+        fotoFile.arrayBuffer().then(buffer => {
+          storageRef.put(new Uint8Array(buffer)).then(() => {
+            storageRef.getDownloadURL().then(url => {
+              fotoURL = url;
+              guardarYAgregar();
+            });
+          });
+        });
+      } else {
+        guardarYAgregar();
+      }
     });
   </script>
 </body>
