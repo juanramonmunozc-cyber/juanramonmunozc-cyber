@@ -9,7 +9,7 @@
 
   <style>
     #map {
-      height: 500px;
+      height: 60vh; /* altura adaptativa para móviles */
       width: 100%;
       margin-top: 10px;
       border: 2px solid #333;
@@ -17,16 +17,16 @@
 
     #btnAgregarQueja {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 15px 20px;
+      bottom: 15px;
+      right: 15px;
+      padding: 18px 22px; /* más grande para tocar en móviles */
       background-color: #007bff;
       color: white;
       border: none;
       border-radius: 50px;
       cursor: pointer;
       box-shadow: 0px 4px 6px rgba(0,0,0,0.3);
-      font-size: 16px;
+      font-size: 18px;
       z-index: 1001;
     }
 
@@ -49,7 +49,8 @@
       background: white;
       padding: 25px;
       border-radius: 10px;
-      width: 350px;
+      width: 90%;
+      max-width: 400px; /* limitar ancho en pantallas grandes */
       box-shadow: 0 4px 8px rgba(0,0,0,0.3);
       z-index: 1000;
     }
@@ -100,6 +101,7 @@
       z-index: 1002;
       font-weight: bold;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      cursor: pointer; /* permitir cerrar tocando */
     }
   </style>
 </head>
@@ -143,7 +145,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const map = L.map('map');
+    const map = L.map('map', {
+      tap: true,
+      touchZoom: true
+    });
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
 
     fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
@@ -183,7 +189,6 @@
       });
     }
 
-    // Mostrar solo puntos aprobados
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
       snapshot.forEach(child => {
@@ -235,6 +240,10 @@
       colocarMarcadorActivo = true;
     });
 
+    mapMessage.addEventListener('click', () => {
+      mapMessage.style.display = 'none';
+    });
+
     map.on('click', function(ev){
       if(!colocarMarcadorActivo) return;
       colocarMarcadorActivo = false;
@@ -244,7 +253,6 @@
       const problema = document.getElementById('problema').value;
       const descripcion = document.getElementById('descripcion').value;
 
-      // Guardar en Firebase como pendiente y abrir Form
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
         .then(res => res.json())
         .then(data => {
@@ -259,7 +267,6 @@
             status: "pendiente"
           });
 
-          // Abrir Google Form
           window.open("https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform", "_blank");
         });
     });
