@@ -38,14 +38,33 @@ const key = urlParams.get('key');
 function cargarReporte() {
   db.ref("reportes/" + key).once("value").then(snapshot => {
     const data = snapshot.val();
-    if(!data) { document.getElementById('reporte').innerText = "Reporte no encontrado"; return; }
+    if(!data) { 
+      document.getElementById('reporte').innerText = "Reporte no encontrado"; 
+      return; 
+    }
+
+    // ====== CÁLCULO DE DIAS TRANSCURRIDOS ======
+    let diasTexto = "";
+    if (data.fechaCreacion) {
+      const ahora = Date.now();
+      const dias = Math.floor((ahora - data.fechaCreacion) / (1000 * 60 * 60 * 24));
+
+      let estadoColor = "";
+      if (dias >= 30) estadoColor = "CRÍTICO (Rojo Parpadeante)";
+      else if (dias >= 14) estadoColor = "Urgente (Rojo)";
+      else if (dias >= 7) estadoColor = "Advertencia (Amarillo)";
+      else estadoColor = "Nuevo (Verde)";
+
+      diasTexto = `<p><b>Días transcurridos:</b> ${dias} días<br><b>Estado por tiempo:</b> ${estadoColor}</p>`;
+    }
 
     let html = `<h2>${data.street}</h2>`;
     html += `<p><b>Problema y descripción:</b> ${data.description}</p>`;
     html += `<p><b>Estado:</b> ${data.status}</p>`;
+    html += diasTexto;
 
     if(data.photos) data.photos.forEach(url => {
-      html += `<img src="${url}" style="width:150px;margin:5px;">`;
+      html += `<img src="${url}" style="width:150px;margin:5px;border-radius:5px;">`;
     });
 
     if(data.updates) data.updates.forEach(u => {
