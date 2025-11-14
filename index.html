@@ -173,22 +173,18 @@
 
     function roundCoord(num) { return Math.round(num * 1000) / 1000; }
 
-    function addMarker(lat, lng, key, icon, street, descripcion="") {
-      const marker = L.marker([lat, lng], { icon }).addTo(map);
-      let popupText = `<b>Reporte en:<br>${street}</b><br>${descripcion}<br><a href="reporte.html?key=${key}" target="_blank">Ver más</a>`;
-      marker.bindPopup(popupText);
-      marker.on('dblclick', () => {
-        map.removeLayer(marker);
-        db.ref("reportes/" + key).remove();
-      });
-    }
 
-    // Mostrar solo puntos aprobados
+    /* ------------------------------------------------------------------
+      🔵 AQUÍ UNIMOS TU CÓDIGO:
+      Se mantienen tus colores y se añade "días transcurridos"
+    ------------------------------------------------------------------ */
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
+
       snapshot.forEach(child => {
         const data = child.val();
         if(data.status !== "aprobado") return;
+
         const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
         if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
         reportCount[keyCoords]++;
@@ -197,17 +193,43 @@
       snapshot.forEach(child => {
         const data = child.val();
         if(data.status !== "aprobado") return;
+
         const key = child.key;
         const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
         const count = reportCount[keyCoords];
         const color = getMarkerColor(count);
         const icon = createIcon(color);
+
+        // ✔️ CÁLCULO DE DÍAS
+        let diasPasados = 0;
+        if (data.fechaCreacion) {
+          const ahora = Date.now();
+          diasPasados = Math.floor((ahora - data.fechaCreacion) / (1000 * 60 * 60 * 24));
+        }
+
         const street = data.street || "Calle desconocida, Tijuana";
         const descripcion = data.description || "";
-        addMarker(data.lat, data.lng, key, icon, street, descripcion);
+
+        // POPUP FINAL
+        let popupText = `
+          <h3>${street}</h3>
+          <p><b>Descripción:</b> ${descripcion}</p>
+          <p><b>Días transcurridos:</b> ${diasPasados} días</p>
+          <a href="reporte.html?key=${key}" target="_blank">Ver más</a>
+        `;
+
+        const marker = L.marker([data.lat, data.lng], { icon }).addTo(map);
+        marker.bindPopup(popupText);
+
+        marker.on('dblclick', () => {
+          map.removeLayer(marker);
+          db.ref("reportes/" + key).remove();
+        });
       });
     });
 
+
+    /* ------------------------------------------------------------- */
     const overlay = document.getElementById('overlay');
     const formContainer = document.getElementById('formContainer');
     const closeForm = document.getElementById('closeForm');
@@ -235,7 +257,7 @@
       colocarMarcadorActivo = true;
     });
 
-    // ✅ Código nuevo que agrega soporte móvil y abre el formulario correctamente
+    // Compatibilidad móvil
     map.on('click', function(ev){
       if(!colocarMarcadorActivo) return;
       colocarMarcadorActivo = false;
@@ -245,7 +267,6 @@
       const problema = document.getElementById('problema').value;
       const descripcion = document.getElementById('descripcion').value;
 
-      // Abre la nueva pestaña primero para evitar bloqueos en móviles
       const nuevaPestaña = window.open('', '_blank');
 
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
@@ -259,6 +280,7 @@
             lat, lng,
             street: fullStreet,
             description: `${problema}: ${descripcion}`,
+            fechaCreacion: Date.now(),
             status: "pendiente"
           });
 
@@ -269,7 +291,6 @@
         });
     });
 
-    // ✅ Soporte táctil para móviles
     map.on('touchend', function(ev){
       if(!colocarMarcadorActivo) return;
       const touch = ev.originalEvent.changedTouches ? ev.originalEvent.changedTouches[0] : null;
@@ -281,3 +302,4 @@
   </script>
 </body>
 </html>
+
