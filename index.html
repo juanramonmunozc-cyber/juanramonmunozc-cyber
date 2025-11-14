@@ -276,14 +276,17 @@
           const street = data.address?.road || 'Calle desconocida';
           const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
           const fullStreet = `${street}, ${city}`;
-
+        
           db.ref("reportes").push({
-            lat, lng,
-            street: fullStreet,
-            description: `${problema}: ${descripcion}`,
-            fechaCreacion: Date.now(),
-            status: "pendiente"
+             lat: lat,
+             lng: lng,
+             street: fullStreet,
+              description: `${problema}: ${descripcion}`,
+             fechaCreacion: Date.now(),
+            status: "pendiente",
+            foto: "reporte1.jpg"  // nombre de la imagen en /fotos/
           });
+
 
           nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
         })
