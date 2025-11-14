@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detalles del Reporte</title>
+  <title>Reporte</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    img { margin: 10px; border-radius: 5px; }
-    .reporte { margin-bottom: 20px; }
-    a { display: inline-block; margin-top: 15px; }
+    body{font-family:Arial,sans-serif;padding:20px;}
+    img{margin:10px;border-radius:5px;}
+    .reporte{margin-bottom:20px;}
+    a{display:inline-block;margin-top:15px;}
   </style>
 </head>
 <body>
@@ -29,40 +29,27 @@
       messagingSenderId: "1098104212670",
       appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Obtener el id del reporte de la URL
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
 
-    db.ref("reportes/" + id).once("value").then(snapshot => {
+    db.ref("reportes/" + id).once("value").then(snapshot=>{
       const data = snapshot.val();
-      if (!data) {
-        document.getElementById("contenido").innerHTML = "Reporte no encontrado.";
-        return;
-      }
+      if(!data){ document.getElementById("contenido").innerHTML="Reporte no encontrado."; return; }
 
-      // Calcular días transcurridos
-      const dias = Math.floor((Date.now() - data.fechaCreacion)/(1000*60*60*24));
+      const dias = Math.floor((Date.now()-data.fechaCreacion)/(1000*60*60*24));
 
-      // Crear HTML del reporte
-      let html = `
-        <div class="reporte">
-          <p><strong>Dirección:</strong> ${data.street || "No disponible"}</p>
-          <p><strong>Descripción:</strong> ${data.description || "No disponible"}</p>
-          <p><strong>Días transcurridos:</strong> ${dias} días</p>
-          <p><strong>Estado:</strong> ${data.status || "Pendiente"}</p>
-        </div>
-      `;
+      let html = `<div class="reporte">
+        <p><strong>Dirección:</strong> ${data.street||"No disponible"}</p>
+        <p><strong>Descripción:</strong> ${data.description||"No disponible"}</p>
+        <p><strong>Días transcurridos:</strong> ${dias} días</p>
+        <p><strong>Estado:</strong> ${data.status||"Pendiente"}</p>
+      </div>`;
 
-      // Agregar foto si existe
-      if (data.foto) {
-        html += `<img src="fotos/${data.foto}" width="300" alt="Foto del reporte">`;
-      } else {
-        html += "<p>No hay foto disponible</p>";
-      }
+      if(data.foto) html += `<img src="fotos/${data.foto}" width="300" alt="Foto del reporte">`;
+      else html += "<p>No hay foto disponible</p>";
 
       document.getElementById("contenido").innerHTML = html;
     });
