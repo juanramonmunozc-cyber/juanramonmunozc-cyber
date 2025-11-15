@@ -4,18 +4,58 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalle del Reporte</title>
+
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     h1, h2 { margin-bottom: 10px; }
     p { margin-bottom: 10px; }
-    img { max-width: 100%; margin-top: 10px; border-radius: 5px; }
+
+    /* Miniatura */
+    .miniatura {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+      transition: transform .2s;
+    }
+
+    .miniatura:hover {
+      transform: scale(1.05);
+    }
+
+    /* Visor pantalla completa */
+    .visor {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(3px);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .visor img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 10px;
+    }
   </style>
+
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
 </head>
 <body>
+
   <h1>Detalle del Reporte</h1>
   <div id="reporteInfo"></div>
+
+  <!-- Visor de imagen -->
+  <div id="visor" class="visor" onclick="cerrarVisor()">
+    <img id="visorImg">
+  </div>
 
   <script>
     const firebaseConfig = {
@@ -31,10 +71,9 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
     const container = document.getElementById('reporteInfo');
 
-    // Obtener la key del reporte desde la URL
+    // Obtener key desde URL
     const urlParams = new URLSearchParams(window.location.search);
     const key = urlParams.get('key');
 
@@ -56,20 +95,35 @@
           <h2>${street}</h2>
           <p><b>Descripción:</b> ${description}</p>
           <p><b>Días transcurridos:</b> ${diasPasados} días</p>
+          <h3>Fotos:</h3>
         `;
 
-        // Mostrar foto(s) desde carpeta local /fotos/
-        if(data.foto){
-          if(Array.isArray(data.foto)){
-            data.foto.forEach(f => { html += `<img src="Fotos/${f}" alt="Foto del reporte">`; });
+        // Mostrar miniaturas y activar visor
+        if (data.foto) {
+          if (Array.isArray(data.foto)) {
+            data.foto.forEach(f => {
+              html += `<img class="miniatura" src="${f}" onclick="abrirVisor('${f}')">`;
+            });
           } else {
-            html += `<img src="Fotos/${data.foto}" alt="Foto del reporte">`;
+            html += `<img class="miniatura" src="${data.foto}" onclick="abrirVisor('${data.foto}')">`;
           }
         }
 
         container.innerHTML = html;
       });
     }
+
+    // Abrir visor
+    function abrirVisor(src) {
+      document.getElementById('visorImg').src = src;
+      document.getElementById('visor').style.display = 'flex';
+    }
+
+    // Cerrar visor
+    function cerrarVisor() {
+      document.getElementById('visor').style.display = 'none';
+    }
   </script>
+
 </body>
 </html>
