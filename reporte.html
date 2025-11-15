@@ -93,12 +93,14 @@
         const diasPasados = Math.floor((Date.now() - data.fechaCreacion) / (1000*60*60*24));
         const street = data.street || "Calle desconocida";
         const description = data.description || "Sin descripción";
+        const estado = data.estado || "Sin estado";
+
 
         let html = `
           <h2>${street}</h2>
           <p><b>Descripción:</b> ${description}</p>
           <p><b>Días transcurridos:</b> ${diasPasados} días</p>
-          <p><b>Estado:</b> ${Estado}</p>
+          <p><b>Estado:</b> ${estado}</p>
           <h3>Fotos:</h3>
         `;
 
