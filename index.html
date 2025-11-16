@@ -167,7 +167,7 @@
 
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
-      if (count >= 3) return 'orange';
+      if (count >= 3) return 'orange';   
       return 'blue';
     }
 
@@ -202,10 +202,13 @@
 
         // ✔️ CÁLCULO DE DÍAS
         let diasPasados = 0;
-        if (data.fechaCreacion) {
-          const ahora = Date.now();
-          diasPasados = Math.floor((ahora - data.fechaCreacion) / (1000 * 60 * 60 * 24));
-        }
+if (data.fechaCreacion) {
+  // Asegurarse de que fechaCreacion está en milisegundos
+  const fechaCreacionMs = data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion;
+  const ahora = Date.now();
+  diasPasados = Math.floor((ahora - fechaCreacionMs) / (1000 * 60 * 60 * 24));
+}
+
 
         const street = data.street || "Calle desconocida, Tijuana";
         const descripcion = data.description || "";
