@@ -113,18 +113,17 @@
 
     function roundCoord(num) { return Math.round(num * 1000) / 1000; }
 
-    // 🔹 Función para calcular días transcurridos ignorando horas y zona horaria
+    // 🔹 Función para calcular días transcurridos en UTC
     function calcularDiasUTC(fechaCreacionMs) {
-  const fechaCreacion = new Date(fechaCreacionMs);
-  const hoy = new Date();
+      const fechaCreacion = new Date(fechaCreacionMs);
+      const hoy = new Date();
 
-  const fechaCreacionUTC = Date.UTC(fechaCreacion.getUTCFullYear(), fechaCreacion.getUTCMonth(), fechaCreacion.getUTCDate());
-  const hoyUTC = Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate());
+      const fechaCreacionUTC = Date.UTC(fechaCreacion.getUTCFullYear(), fechaCreacion.getUTCMonth(), fechaCreacion.getUTCDate());
+      const hoyUTC = Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate());
 
-  const diffMs = hoyUTC - fechaCreacionUTC;
-  return Math.round(diffMs / (1000*60*60*24));
-}
-
+      const diffMs = hoyUTC - fechaCreacionUTC;
+      return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    }
 
     // Cargar reportes desde Firebase
     db.ref("reportes").once("value").then(snapshot => {
@@ -148,7 +147,7 @@
 
         // ✔️ CÁLCULO DE DÍAS
         const fechaCreacionMs = data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion;
-        const diasPasados = calcularDias(fechaCreacionMs);
+        const diasPasados = calcularDiasUTC(fechaCreacionMs);
 
         const street = data.street || "Calle desconocida, Tijuana";
         const descripcion = data.description || "";
@@ -161,8 +160,8 @@
           <a href="reporte.html?key=${key}">Ver más</a>
         `;
 
-        // 🔹 Lógica combinada de color
-        let baseColor = getMarkerColor(count); // color por cantidad de reportes
+        // 🔹 Lógica combinada de color y parpadeo
+        let baseColor = getMarkerColor(count);
         let color = baseColor;
         let parpadeo = false;
 
