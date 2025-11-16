@@ -172,20 +172,13 @@
         const marker = L.marker([data.lat, data.lng], { icon }).addTo(map);
         marker.bindPopup(popupText);
 
-       
-
         if (parpadeo) {
-  let visible = true;
-  setInterval(() => {
-    if (visible) {
-      map.removeLayer(marker); // lo quita del mapa
-    } else {
-      marker.addTo(map); // lo vuelve a mostrar
-    }
-    visible = !visible;
-  }, 500); // cada 500ms
-}
-
+          let visible = true;
+          setInterval(() => {
+            marker.setIcon(createIcon(visible ? 'red' : 'gray'));
+            visible = !visible;
+          }, 500);
+        }
 
         marker.on('dblclick', () => {
           map.removeLayer(marker);
