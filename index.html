@@ -165,27 +165,11 @@
       });
     }
 
-    function getBaseColorByDays(dias) {
-       if (dias >= 30) return "red";       // Muy viejo
-        if (dias >= 14) return "orange";    // Viejo
-        if (dias >= 7) return "yellow";     // 1 semana
-         return "blue";                      // Nuevo
+    function getMarkerColor(count) {
+      if (count >= 5) return 'red';
+      if (count >= 3) return 'orange';
+      return 'blue';
     }
-    function applyIntensity(baseColor, count) {
-  const levels = ["blue", "yellow", "orange", "red"];
-
-  let index = levels.indexOf(baseColor);
-
-  if (count >= 5) index += 2;
-  else if (count >= 3) index += 1;
-
-  if (index > 3) index = 3;
-
-  return levels[index];
-}
-
-
-
 
     function roundCoord(num) { return Math.round(num * 1000) / 1000; }
 
@@ -213,9 +197,7 @@
         const key = child.key;
         const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
         const count = reportCount[keyCoords];
-       const baseColor = getBaseColorByDays(diasPasados);
-const color = applyIntensity(baseColor, count);
-
+        const color = getMarkerColor(count);
         const icon = createIcon(color);
 
         // ✔️ CÁLCULO DE DÍAS
