@@ -216,7 +216,7 @@
           <h3>${street}</h3>
           <p><b>Descripción:</b> ${descripcion}</p>
           <p><b>Días transcurridos:</b> ${diasPasados} días</p>
-          <a href="reporte.html?key=${key}" target="_blank">Ver más</a>
+          <a href="reporte.html?key=${key}">Ver más</a>
         `;
 
         const marker = L.marker([data.lat, data.lng], { icon }).addTo(map);
