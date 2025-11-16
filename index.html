@@ -201,13 +201,16 @@
         const icon = createIcon(color);
 
         // ✔️ CÁLCULO DE DÍAS
-        let diasPasados = 0;
+        // ✔️ CÁLCULO DE DÍAS
+let diasPasados = 0;
 if (data.fechaCreacion) {
   // Asegurarse de que fechaCreacion está en milisegundos
   const fechaCreacionMs = data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion;
   const ahora = Date.now();
-  diasPasados = Math.floor((ahora - fechaCreacionMs) / (1000 * 60 * 60 * 24));
+  // Usamos Math.round para evitar errores por zona horaria
+  diasPasados = Math.round((ahora - fechaCreacionMs) / (1000 * 60 * 60 * 24));
 }
+
 
 
         const street = data.street || "Calle desconocida, Tijuana";
