@@ -117,10 +117,8 @@
     function calcularDias(fechaCreacionMs) {
       const fechaCreacion = new Date(fechaCreacionMs);
       const hoy = new Date();
-
       const fechaCreacionSoloDia = new Date(fechaCreacion.getFullYear(), fechaCreacion.getMonth(), fechaCreacion.getDate());
       const hoySoloDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-
       const diffMs = hoySoloDia - fechaCreacionSoloDia;
       return Math.round(diffMs / (1000 * 60 * 60 * 24));
     }
@@ -132,7 +130,6 @@
       snapshot.forEach(child => {
         const data = child.val();
         if(data.status !== "aprobado") return;
-
         const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
         if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
         reportCount[keyCoords]++;
@@ -145,15 +142,10 @@
         const key = child.key;
         const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
         const count = reportCount[keyCoords];
-        const color = getMarkerColor(count);
-        const icon = createIcon(color);
 
-        // ✔️ CÁLCULO DE DÍAS usando la nueva función
-        let diasPasados = 0;
-        if (data.fechaCreacion) {
-          const fechaCreacionMs = data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion;
-          diasPasados = calcularDias(fechaCreacionMs);
-        }
+        // ✔️ CÁLCULO DE DÍAS
+        const fechaCreacionMs = data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion;
+        const diasPasados = calcularDias(fechaCreacionMs);
 
         const street = data.street || "Calle desconocida, Tijuana";
         const descripcion = data.description || "";
@@ -166,8 +158,29 @@
           <a href="reporte.html?key=${key}">Ver más</a>
         `;
 
+        // 🔹 Lógica combinada de color
+        let baseColor = getMarkerColor(count); // color por cantidad de reportes
+        let color = baseColor;
+        let parpadeo = false;
+
+        if (diasPasados >= 14) {
+          color = 'red';
+          parpadeo = true;
+        } else if (diasPasados >= 7) {
+          color = 'orange';
+        }
+
+        const icon = createIcon(color);
         const marker = L.marker([data.lat, data.lng], { icon }).addTo(map);
         marker.bindPopup(popupText);
+
+        if (parpadeo) {
+          let visible = true;
+          setInterval(() => {
+            marker.setIcon(createIcon(visible ? 'red' : 'white'));
+            visible = !visible;
+          }, 500);
+        }
 
         marker.on('dblclick', () => {
           map.removeLayer(marker);
