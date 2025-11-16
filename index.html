@@ -8,97 +8,37 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
   <style>
-    #map {
-      height: 500px;
-      width: 100%;
-      margin-top: 10px;
-      border: 2px solid #333;
-    }
-
+    #map { height: 500px; width: 100%; margin-top: 10px; border: 2px solid #333; }
     #btnAgregarQueja {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 15px 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      box-shadow: 0px 4px 6px rgba(0,0,0,0.3);
-      font-size: 16px;
-      z-index: 1001;
-    }       
-
+      position: fixed; bottom: 20px; right: 20px; padding: 15px 20px;
+      background-color: #007bff; color: white; border: none; border-radius: 50px;
+      cursor: pointer; box-shadow: 0px 4px 6px rgba(0,0,0,0.3); font-size: 16px; z-index: 1001;
+    }
     #btnAgregarQueja:hover { background-color: #0056b3; }
-
     #overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      z-index: 999;
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999;
     }
-
     #formContainer {
-      display: none;
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      width: 350px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-      z-index: 1000;
+      display: none; position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%); background: white; padding: 25px;
+      border-radius: 10px; width: 350px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 1000;
     }
-
     #formContainer h3 { margin-top: 0; }
     #formContainer label { font-weight: bold; display: block; margin-top: 10px; }
     #formContainer input, #formContainer textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px;
     }
-
     #formContainer button {
-      margin-top: 15px;
-      padding: 10px;
-      width: 100%;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+      margin-top: 15px; padding: 10px; width: 100%;
+      background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;
     }
-
     #formContainer button:hover { background-color: #218838; }
-
-    #closeForm {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 20px;
-      color: #333;
-    }
-
+    #closeForm { position: absolute; top: 10px; right: 15px; cursor: pointer; font-weight: bold; font-size: 20px; color: #333; }
     #mapMessage {
-      display: none;
-      position: fixed;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ffc107;
-      color: #333;
-      padding: 10px 20px;
-      border-radius: 5px;
-      z-index: 1002;
-      font-weight: bold;
+      display: none; position: fixed; top: 10px; left: 50%;
+      transform: translateX(-50%); background: #ffc107; color: #333;
+      padding: 10px 20px; border-radius: 5px; z-index: 1002; font-weight: bold;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
   </style>
@@ -167,17 +107,25 @@
 
     function getMarkerColor(count) {
       if (count >= 5) return 'red';
-      if (count >= 3) return 'orange';   
+      if (count >= 3) return 'orange';
       return 'blue';
     }
 
     function roundCoord(num) { return Math.round(num * 1000) / 1000; }
 
+    // 🔹 Función para calcular días transcurridos correctamente
+    function calcularDias(fechaCreacionMs) {
+      const fechaCreacion = new Date(fechaCreacionMs);
+      const hoy = new Date();
 
-    /* ------------------------------------------------------------------
-      🔵 AQUÍ UNIMOS TU CÓDIGO:
-      Se mantienen tus colores y se añade "días transcurridos"
-    ------------------------------------------------------------------ */
+      const fechaCreacionSoloDia = new Date(fechaCreacion.getFullYear(), fechaCreacion.getMonth(), fechaCreacion.getDate());
+      const hoySoloDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+
+      const diffMs = hoySoloDia - fechaCreacionSoloDia;
+      return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    }
+
+    // Cargar reportes desde Firebase
     db.ref("reportes").once("value").then(snapshot => {
       const reportCount = {};
 
@@ -200,23 +148,16 @@
         const color = getMarkerColor(count);
         const icon = createIcon(color);
 
-        // ✔️ CÁLCULO DE DÍAS
-        // ✔️ CÁLCULO DE DÍAS
-let diasPasados = 0;
-if (data.fechaCreacion) {
-  // Asegurarse de que fechaCreacion está en milisegundos
-  const fechaCreacionMs = data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion;
-  const ahora = Date.now();
-  // Usamos Math.round para evitar errores por zona horaria
-  diasPasados = Math.round((ahora - fechaCreacionMs) / (1000 * 60 * 60 * 24));
-}
-
-
+        // ✔️ CÁLCULO DE DÍAS usando la nueva función
+        let diasPasados = 0;
+        if (data.fechaCreacion) {
+          const fechaCreacionMs = data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion;
+          diasPasados = calcularDias(fechaCreacionMs);
+        }
 
         const street = data.street || "Calle desconocida, Tijuana";
         const descripcion = data.description || "";
 
-        // POPUP FINAL
         let popupText = `
           <h2>Reporte en:</h2>
           <h3>${street}</h3>
@@ -235,8 +176,7 @@ if (data.fechaCreacion) {
       });
     });
 
-
-    /* ------------------------------------------------------------- */
+    // -------------------------------------------------------------
     const overlay = document.getElementById('overlay');
     const formContainer = document.getElementById('formContainer');
     const closeForm = document.getElementById('closeForm');
@@ -264,7 +204,6 @@ if (data.fechaCreacion) {
       colocarMarcadorActivo = true;
     });
 
-    // Compatibilidad móvil
     map.on('click', function(ev){
       if(!colocarMarcadorActivo) return;
       colocarMarcadorActivo = false;
@@ -287,13 +226,12 @@ if (data.fechaCreacion) {
              lat: lat,
              lng: lng,
              street: fullStreet,
-              description: `${problema}: ${descripcion}`,
+             description: `${problema}: ${descripcion}`,
              fechaCreacion: Date.now(),
              status: "pendiente",
-             foto: "reporte1.jpg", // nombre de la imagen en /fotos/
+             foto: "reporte1.jpg",
              estado: "pendiente"
           });
-
 
           nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
         })
@@ -302,6 +240,7 @@ if (data.fechaCreacion) {
         });
     });
 
+    // Compatibilidad móvil
     map.on('touchend', function(ev){
       if(!colocarMarcadorActivo) return;
       const touch = ev.originalEvent.changedTouches ? ev.originalEvent.changedTouches[0] : null;
@@ -313,4 +252,3 @@ if (data.fechaCreacion) {
   </script>
 </body>
 </html>
-
