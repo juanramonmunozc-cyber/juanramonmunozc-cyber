@@ -175,8 +175,8 @@
         if (parpadeo) {
           let visible = true;
           setInterval(() => {
-            marker.setIcon(createIcon(visible ? 'red' : 'gray'));
-            
+            marker.setIcon(createIcon(visible ? 'red' : 'grey'));
+            visible = !visible;
           }, 500);
         }
 
