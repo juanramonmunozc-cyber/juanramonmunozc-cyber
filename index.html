@@ -1,266 +1,827 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Centro - Atención Ciudadana</title>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CESPT - Atención Ciudadana</title>
 <link rel="icon" type="image/png" href="crisis.png">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
-  <style>
-    #map { height: 550px; width: 100%; margin-top: 50px; border: 5px solid #651111; }
-    #btnAgregarQueja {
-      position: fixed; bottom: 20px; right: 20px; padding: 15px 20px;
-      background-color: #007bff; color: white; border: none; border-radius: 50px;
-      cursor: pointer; box-shadow: 0px 4px 6px rgba(0,0,0,0.3); font-size: 16px; z-index: 1001;
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif; 
+    margin:0; 
+    padding:0;     
+    background:#f2f2f2; 
+  }
+
+  h1 { color:#7c002a; margin-top:18px; font-size:40px; text-align:center; font-weight:700; }
+  h2 { color:#7c002a; margin-top:6px; font-size:20px; text-align:center; font-weight:500; }
+
+  /* MENU SUPERIOR */
+  .menu-superior {
+    width: 100%;
+    background:#6a0a24;
+    padding: 12px 0;
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  .menu-superior a { 
+    color:white; 
+    font-size:18px; 
+    font-weight:bold; 
+    text-decoration:none; 
+    cursor:pointer; 
+    padding: 8px 16px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+  }
+  .menu-superior a:hover { 
+    background: rgba(255,255,255,0.2);
+  }
+  .menu-superior a.activo {
+    background: rgba(255,255,255,0.3);
+    box-shadow: 0 0 10px rgba(255,255,255,0.2);
+  }
+
+  /* SECCIONES GENERALES */
+  .seccion {
+    max-width:900px;
+    margin:18px auto;
+    background:#fff;
+    padding:20px;
+    border-radius:10px;
+    border:2px solid #7c002a;
+    font-size:16px;
+  }
+  .oculto { display:none; }
+
+  /* MAPA */
+  .map-box {
+    width: 100%;
+    padding: 30px 0;
+    display:flex;
+    justify-content:center;
+    margin-top:20px;
+    border-radius:8px;
+    background: linear-gradient(90deg, #ffffff 40%, #7c002a 100%);
+  }
+
+  .map-box > #map {
+    width: 90%;
+    max-width: 980px;
+    height: 550px;
+    border-radius:12px;
+    border:3px solid #7c002a;
+    background: linear-gradient(180deg, #ffffff 0%, #fff 70%, rgba(124,0,42,0.06) 100%);
+    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+  }
+
+  /* BOTÓN */
+  #btnAgregarQueja {
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    padding:15px 20px;
+    background:#007bff;
+    color:#fff;
+    border:none;
+    border-radius:50px;
+    cursor:pointer;
+    box-shadow:0 4px 6px rgba(0,0,0,.25);
+    font-size:16px;
+    z-index:1003
+  }
+
+  #btnAgregarQueja:hover { background:#0056b3 }
+
+  /* MODAL */
+  #overlay {
+    display:none;
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,.6);
+    z-index:1002
+  }
+
+  #formContainer {
+    display:none;
+    position:fixed;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    background:#fff;
+    padding:20px;
+    border-radius:10px;
+    width:360px;
+    box-shadow:0 6px 18px rgba(0,0,0,.3);
+    z-index:1003
+  }
+
+  #formContainer h3 { margin-top:0 }
+  #formContainer label { font-weight:700; display:block; margin-top:10px }
+  #formContainer input, #formContainer textarea {
+    width:100%; padding:8px; margin-top:6px;
+    border:1px solid #ccc; border-radius:6px
+  }
+
+  #closeForm {
+    position:absolute; top:8px; right:12px; cursor:pointer;
+    font-weight:700; font-size:20px; color:#333;
+  }
+
+  #mapMessage {
+    display:none;
+    position:fixed;
+    top:12px; left:50%;
+    transform:translateX(-50%);
+    background:#ffc107;
+    color:#333;
+    padding:10px 18px;
+    border-radius:6px;
+    z-index:1004;
+    font-weight:700;
+  }
+
+  /* DETALLE REPORTE */
+  #detail {
+    display:none;
+    max-width:900px;
+    margin:20px auto;
+    background:#fff;
+    padding:24px;
+    border-radius:10px;
+    border:2px solid #7c002a;
+  }
+
+  #detail h1 { font-size:28px; margin-bottom:6px; color:#222; }
+  #detail a.back { display:inline-block; margin-bottom:12px; color:#4b4bd6; text-decoration:underline; }
+
+  /* Estilos para las miniaturas de fotos */
+  .thumb {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    margin: 8px;
+    cursor: pointer;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+  .thumb:hover {
+    border-color: #7c002a;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+
+  /* Modal para ver foto en grande */
+  #modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+  }
+  #modalImg {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  #closeModal {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 40px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    z-index: 10001;
+  }
+  #closeModal:hover {
+    color: #ff6b6b;
+  }
+
+  /* Estilos para tarjetas de reportes */
+  .reporte-card {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    background: #fafafa;
+    transition: all 0.3s ease;
+  }
+  .reporte-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+  }
+  .reporte-card h3 {
+    margin: 0 0 5px 0;
+    color: #7c002a;
+  }
+  .reporte-card .fecha {
+    color: #666;
+    font-size: 14px;
+  }
+  .reporte-card .descripcion {
+    margin-top: 10px;
+    color: #333;
+  }
+  .reporte-card .estado {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 8px;
+  }
+  .estado-pendiente { background: #fff3cd; color: #856404; }
+  .estado-aprobado { background: #d1ecf1; color: #0c5460; }
+  .estado-resuelto { background: #d4edda; color: #155724; }
+
+  @media (max-width:700px){
+    h1 { font-size:30px; }
+    h2 { font-size:16px; }
+    .map-box > #map { width:94%; height:420px; }
+    .menu-superior { gap:14px; padding:10px 0; }
+    .menu-superior a { font-size:15px; padding: 6px 12px; }
+    .thumb {
+      width: 100px;
+      height: 100px;
+      margin: 5px;
     }
-    #btnAgregarQueja:hover { background-color: #0056b3; }
-    #overlay {
-      display: none; position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999;
-    }
-    #formContainer {
-      display: none; position: fixed; top: 50%; left: 50%;
-      transform: translate(-50%, -50%); background: white; padding: 25px;
-      border-radius: 10px; width: 350px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 1000;
-    }
-    #formContainer h3 { margin-top: 0; }
-    #formContainer label { font-weight: bold; display: block; margin-top: 10px; }
-    #formContainer input, #formContainer textarea {
-      width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px;
-    }
-    #formContainer button {
-      margin-top: 15px; padding: 10px; width: 100%;
-      background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;
-    }
-    #formContainer button:hover { background-color: #218838; }
-    #closeForm { position: absolute; top: 10px; right: 15px; cursor: pointer; font-weight: bold; font-size: 20px; color: #333; }
-    #mapMessage {
-      display: none; position: fixed; top: 10px; left: 50%;
-      transform: translateX(-50%); background: #ffc107; color: #333;
-      padding: 10px 20px; border-radius: 5px; z-index: 1002; font-weight: bold;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    }
-  </style>
+  }
+
+</style>
 </head>
 <body>
- <div style="text-align: center;">
-  <h1>Centro de atención</h1>
-  <h2>Módulo de atención: Quejas, ayudas y reportes</h2></div>
 
-  <div id="map"></div>
-  <button id="btnAgregarQueja">Agregar Queja</button>
-  <div id="overlay"></div>
-  <div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
+<h1>Centro de atención CESPT</h1>
+<h2>Atención ciudadana: Quejas, ayudas y reportes</h2>
 
-  <div id="formContainer">
-    <span id="closeForm">&times;</span>
-    <h3>Nueva Queja</h3>
-    <form id="formQueja">
-      <label>Problema:</label>
-      <input type="text" id="problema" placeholder="Escriba el problema presente" required>
-      <label>Descripción:</label>
-      <textarea id="descripcion" rows="3" placeholder="Describe el problema..." required></textarea>
-      <button type="submit">Enviar Queja</button>
-    </form>
+<nav class="menu-superior">
+  <a href="#actualizaciones" id="btnActualizaciones">Actualizaciones</a>
+  <a href="#reportes" id="btnReportes">Reportes</a>
+  <a href="#ayuda" id="btnAyuda">Ayuda</a>
+</nav>
+
+<!-- ===========================
+     SECCIÓN ACTUALIZACIONES
+=========================== -->
+<section id="actualizaciones" class="seccion oculto">
+
+  <h2 style="margin-top:0">Actualizaciones</h2>
+
+  <!-- Tarjeta 1 -->
+  <div style="border:1px solid #ddd; padding:15px; border-radius:10px; margin-bottom:15px; background:#fafafa;">
+    <h3 style="margin:0 0 5px 0; color:#7c002a;">Fuga atendida en Colonia Libertad</h3>
+    <small style="color:#666;">Publicado: 12 de febrero 2025</small>
+    <p style="margin-top:10px;">
+      Se atendió el reporte de fuga registrado en la Calle 4ta, Colonia Libertad.
+      El equipo de mantenimiento realizó la reparación completa de la tubería dañada.
+    </p>
   </div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
+  <!-- Tarjeta 2 -->
+  <div style="border:1px solid #ddd; padding:15px; border-radius:10px; margin-bottom:15px; background:#fafafa;">
+    <h3 style="margin:0 0 5px 0; color:#7c002a;">Revisión programada en Zona Río</h3>
+    <small style="color:#666;">Publicado: 8 de febrero 2025</small>
+    <p style="margin-top:10px;">
+      Se recibió un reporte sobre baja presión en la Zona Río.
+      El área técnica confirmó visita programada para diagnóstico este fin de semana.
+    </p>
+  </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
-      authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
-      databaseURL: "https://mapa-de-quejas-e5354-default-rtdb.firebaseio.com",
-      projectId: "mapa-de-quejas-e5354",
-      storageBucket: "mapa-de-quejas-e5354.appspot.com",
-      messagingSenderId: "1098104212670",
-      appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef",
-      measurementId: "G-XJ015E8YWX"
-    };
+</section>
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+<!-- ===========================
+     SECCIÓN REPORTES (LISTA)
+=========================== -->
+<section id="reportes" class="seccion oculto">
+  <h2>Reportes atendidos</h2>
+  <div id="listaReportes"></div>
+</section>
 
-    const map = L.map('map');
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+<!-- ===========================
+     SECCIÓN AYUDA
+=========================== -->
+<section id="ayuda" class="seccion oculto">
+  <h2>Ayuda y contacto</h2>
 
-    fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
-      .then(response => response.json())
-      .then(data => {
-        if (data.length > 0) map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
-        else map.setView([32.533, -117.033], 12);
-      })
-      .catch(() => map.setView([32.533, -117.033], 12));
+  <p>Si necesitas asistencia inmediata, puedes comunicarte a:</p>
 
-    function createIcon(color) {
-      return L.icon({
-        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-      });
+  <ul>
+    <li>Atención CESPT: <strong>664-928-4421</strong></li>
+    <li>Reportes de agua: <strong>664-701-1129</strong></li>
+    <li>Emergencias hidráulicas: <strong>664-884-9033</strong></li>
+  </ul>
+
+  <p>Correos electrónicos de contacto:</p>
+
+  <ul>
+    <li>soporte@cespt-ayuda.com</li>
+    <li>reportes@tij-cespt.org</li>
+    <li>asistencia.usuarios@aguatj.net</li>
+  </ul>
+
+</section>
+
+<!-- MAPA + UI -->
+<div class="map-box">
+  <div id="map"></div>
+</div>
+
+<button id="btnAgregarQueja">Agregar Queja</button>
+<div id="overlay"></div>
+<div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
+
+<div id="formContainer">
+  <span id="closeForm">&times;</span>
+  <h3>Nueva Queja</h3>
+  <form id="formQueja">
+    <label>Problema:</label>
+    <input type="text" id="problema" placeholder="Ej. Fuga de agua" required>
+    <label>Descripción:</label>
+    <textarea id="descripcion" rows="3" placeholder="Describe el problema..." required></textarea>
+    <button type="submit">Enviar Queja</button>
+  </form>
+</div>
+
+<!-- VISTA DETALLE (se muestra cuando hay ?id=...) -->
+<div id="detail">
+  <h1>Detalle del Reporte</h1>
+  <a class="back" id="backToMap" href="#">Volver al mapa</a>
+
+  <div id="detailContent">
+    <h2 id="detailStreet">Calle ...</h2>
+    <div class="field"><strong>Descripción:</strong> <span id="detailDescription"></span></div>
+    <div class="field"><strong>Días transcurridos:</strong> <span id="detailDias">0</span> días</div>
+    <div class="field"><strong>Estado:</strong> <span id="detailEstado"></span></div>
+    <div class="field"><strong>Fotos:</strong></div>
+    <div id="detailPhotos"></div>
+  </div>
+</div>
+
+<!-- Modal para ver fotos en grande -->
+<div id="modal">
+  <button id="closeModal">&times;</button>
+  <img id="modalImg" src="" alt="Foto del reporte">
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
+
+<script>
+/* ---------- Config Firebase --------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
+  authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
+  databaseURL: "https://mapa-de-quejas-e5354-default-rtdb.firebaseio.com",
+  projectId: "mapa-de-quejas-e5354",
+  storageBucket: "mapa-de-quejas-e5354.appspot.com",
+  messagingSenderId: "1098104212670",
+  appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef",
+  measurementId: "G-XJ015E8YWX"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ---------- Variables globales para el estado del menú ---------- */
+let seccionActual = null;
+
+/* ---------- Helpers (reutilizables) ---------- */
+function escapeHtml(str){
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+function roundCoord(num){ return Math.round(Number(num) * 1000) / 1000; }
+
+function createIcon(color) {
+  return L.icon({
+    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+}
+
+function getMarkerColor(count) {
+  if (count >= 5) return 'red';
+  if (count >= 3) return 'orange';
+  return 'blue';
+}
+
+// 🔹 Función para calcular días transcurridos en UTC
+function calcularDiasUTC(fechaCreacionMs) {
+  const fechaCreacion = new Date(fechaCreacionMs);
+  const hoy = new Date();
+
+  const fechaCreacionUTC = Date.UTC(fechaCreacion.getUTCFullYear(), fechaCreacion.getUTCMonth(), fechaCreacion.getUTCDate());
+  const hoyUTC = Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate());
+
+  const diffMs = hoyUTC - fechaCreacionUTC;
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
+}
+
+// 🔹 FUNCIÓN PARA MOSTRAR FOTOS EN MODAL
+function mostrarImagen(src) {
+  document.getElementById("modalImg").src = src;
+  document.getElementById("modal").style.display = "flex";
+}
+
+// Cerrar modal al hacer clic en la X
+document.getElementById("closeModal").addEventListener("click", function() {
+  document.getElementById("modal").style.display = "none";
+});
+
+// Cerrar modal al hacer clic fuera de la imagen
+document.getElementById("modal").addEventListener("click", function(e) {
+  if (e.target.id === "modal") {
+    document.getElementById("modal").style.display = "none";
+  }
+});
+
+/* ---------- FUNCIÓN PARA MANEJAR EL MENÚ ---------- */
+function toggleSeccion(seccionId) {
+  const seccion = document.getElementById(seccionId);
+  const boton = document.getElementById(`btn${seccionId.charAt(0).toUpperCase() + seccionId.slice(1)}`);
+  
+  // Si ya está activa, la cerramos
+  if (seccionActual === seccionId) {
+    seccion.style.display = 'none';
+    boton.classList.remove('activo');
+    seccionActual = null;
+    return;
+  }
+  
+  // Cerramos la sección actual si existe
+  if (seccionActual) {
+    document.getElementById(seccionActual).style.display = 'none';
+    document.getElementById(`btn${seccionActual.charAt(0).toUpperCase() + seccionActual.slice(1)}`).classList.remove('activo');
+  }
+  
+  // Abrimos la nueva sección
+  seccion.style.display = 'block';
+  boton.classList.add('activo');
+  seccionActual = seccionId;
+  
+  // Scroll suave hacia la sección
+  window.scrollTo({top: seccion.offsetTop - 20, behavior: 'smooth'});
+  
+  // Si es la sección de reportes, cargamos la lista
+  if (seccionId === 'reportes') {
+    cargarListaReportes();
+  }
+}
+
+/* ---------- RUTEO: si hay ?id=abc mostramos detalle ---------- */
+const urlParams = new URLSearchParams(window.location.search);
+const detailId = urlParams.get('id');
+const detailEl = document.getElementById('detail');
+
+if (detailId) {
+  // mostrar detalle (oculta mapa y UI)
+  document.querySelector('.map-box').style.display = 'none';
+  document.getElementById('btnAgregarQueja').style.display = 'none';
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('formContainer').style.display = 'none';
+  document.getElementById('mapMessage').style.display = 'none';
+  detailEl.style.display = 'block';
+  mostrarDetalle(detailId);
+} else {
+  detailEl.style.display = 'none';
+  initMap();
+}
+
+/* ---------- FUNCION mostrarDetalle(id) ---------- */
+function mostrarDetalle(id){
+  const ref = db.ref('reportes/' + id);
+  ref.once('value').then(snap => {
+    const data = snap.val();
+    if (!data) {
+      document.getElementById('detailContent').innerHTML = '<p>Reporte no encontrado.</p>';
+      return;
     }
+    
+    const street = data.street || 'Calle desconocida, Tijuana';
+    const description = data.description || '';
+    const estado = data.status || '';
+    
+    // ✔️ CÁLCULO DE DÍAS MEJORADO
+    const fechaCreacionMs = data.fechaCreacion ? (data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion) : Date.now();
+    const diasPasados = calcularDiasUTC(fechaCreacionMs);
 
-    function getMarkerColor(count) {
-      if (count >= 5) return 'red';
-      if (count >= 3) return 'orange';
-      return 'blue';
-    }
+    document.getElementById('detailStreet').textContent = street;
+    document.getElementById('detailDescription').textContent = description;
+    document.getElementById('detailDias').textContent = diasPasados;
+    document.getElementById('detailEstado').textContent = estado;
 
-    function roundCoord(num) { return Math.round(num * 1000) / 1000; }
+    const photosContainer = document.getElementById('detailPhotos');
+    photosContainer.innerHTML = '';
 
-    // 🔹 Función para calcular días transcurridos en UTC
-    function calcularDiasUTC(fechaCreacionMs) {
-      const fechaCreacion = new Date(fechaCreacionMs);
-      const hoy = new Date();
-
-      const fechaCreacionUTC = Date.UTC(fechaCreacion.getUTCFullYear(), fechaCreacion.getUTCMonth(), fechaCreacion.getUTCDate());
-      const hoyUTC = Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate());
-
-      const diffMs = hoyUTC - fechaCreacionUTC;
-      return Math.round(diffMs / (1000 * 60 * 60 * 24));
-    }
-
-    // Cargar reportes desde Firebase
-    db.ref("reportes").once("value").then(snapshot => {
-      const reportCount = {};
-
-      snapshot.forEach(child => {
-        const data = child.val();
-        if(data.status !== "aprobado") return;
-        const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
-        if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
-        reportCount[keyCoords]++;
-      });
-
-      snapshot.forEach(child => {
-        const data = child.val();
-        if(data.status !== "aprobado") return;
-
-        const key = child.key;
-        const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
-        const count = reportCount[keyCoords];
-
-        // ✔️ CÁLCULO DE DÍAS
-        const fechaCreacionMs = data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion;
-        const diasPasados = calcularDiasUTC(fechaCreacionMs);
-
-        const street = data.street || "Calle desconocida, Tijuana";
-        const descripcion = data.description || "";
-
-        let popupText = `
-          <h2>Reporte en:</h2>
-          <h3>${street}</h3>
-          <p><b>Descripción:</b> ${descripcion}</p>
-          <p><b>Días transcurridos:</b> ${diasPasados} días</p>
-          <a href="reporte.html?key=${key}">Ver más</a>
-        `;
-
-        // 🔹 Lógica combinada de color y parpadeo
-        let baseColor = getMarkerColor(count);
-        let color = baseColor;
-        let parpadeo = false;
-
-        if (diasPasados >= 14) { color = 'red'; parpadeo = true; }
-        else if (diasPasados >= 7) { color = 'orange'; }
-
-        const icon = createIcon(color);
-        const marker = L.marker([data.lat, data.lng], { icon }).addTo(map);
-        marker.bindPopup(popupText);
-
-        if (parpadeo) {
-          let visible = true;
-          setInterval(() => {
-            marker.setIcon(createIcon(visible ? 'red' : 'grey'));
-            visible = !visible;
-          }, 500);
-        }
-
-        marker.on('dblclick', () => {
-          map.removeLayer(marker);
-          db.ref("reportes/" + key).remove();
+    // 🔹 AGREGAR FOTOS CON SISTEMA DE MODAL
+    if (data.foto) {
+      if (Array.isArray(data.foto)) {
+        // Múltiples fotos
+        data.foto.forEach(f => {
+          const img = document.createElement('img');
+          img.src = `Fotos/${f}`;
+          img.className = 'thumb';
+          img.onclick = () => mostrarImagen(`Fotos/${f}`);
+          photosContainer.appendChild(img);
         });
+      } else {
+        // Una sola foto
+        const img = document.createElement('img');
+        img.src = `Fotos/${data.foto}`;
+        img.className = 'thumb';
+        img.onclick = () => mostrarImagen(`Fotos/${data.foto}`);
+        photosContainer.appendChild(img);
+      }
+    } else if (data.photo) {
+      // Compatibilidad con campo "photo"
+      const img = document.createElement('img');
+      img.src = data.photo;
+      img.className = 'thumb';
+      img.onclick = () => mostrarImagen(data.photo);
+      photosContainer.appendChild(img);
+    } else {
+      photosContainer.innerHTML = '<div style="color:#666">No hay fotos disponibles para este reporte</div>';
+    }
+  }).catch(err => {
+    document.getElementById('detailContent').innerHTML = '<p>Error cargando el reporte.</p>';
+    console.error(err);
+  });
+
+  document.getElementById('backToMap').addEventListener('click', (e) => {
+    e.preventDefault();
+    window.location.href = window.location.pathname;
+  });
+}
+
+/* ---------- FUNCIONES MAPA (cuando no hay ?id) ---------- */
+function initMap(){
+  const map = L.map('map');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+
+  fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
+    .then(r => r.json())
+    .then(data => {
+      if (data.length > 0) map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
+      else map.setView([32.533, -117.033], 12);
+    })
+    .catch(()=> map.setView([32.533, -117.033], 12));
+
+  function addMarker(lat, lng, key, icon, street, descripcion = '', rawData = {}){
+    const marker = L.marker([lat, lng], { icon }).addTo(map);
+
+    // ✔️ CÁLCULO DE DÍAS MEJORADO
+    const fechaCreacionMs = rawData.fechaCreacion ? (rawData.fechaCreacion.toMillis ? rawData.fechaCreacion.toMillis() : rawData.fechaCreacion) : Date.now();
+    const diasPasados = calcularDiasUTC(fechaCreacionMs);
+    
+    const streetEsc = escapeHtml(street || 'Calle desconocida, Tijuana');
+    const descEsc = escapeHtml(descripcion || '');
+
+    // 🔹 Lógica combinada de color y parpadeo
+    let parpadeo = false;
+    let colorClass = '';
+    if (diasPasados >= 14) { 
+      colorClass = 'red'; 
+      parpadeo = true; 
+    } else if (diasPasados >= 7) { 
+      colorClass = 'orange'; 
+    }
+
+    const popupHtml = `
+      <div style="font-weight:700;margin-bottom:6px">Reporte en:</div>
+      <div style="font-weight:700">${streetEsc}</div>
+      <div style="margin-top:8px"><strong>Descripción:</strong> ${descEsc}</div>
+      <div style="margin-top:8px"><strong>Días transcurridos:</strong> ${diasPasados} días</div>
+      <div style="margin-top:8px" class="popup-link"><a href="?id=${key}">Ver más</a></div>
+    `;
+
+    marker.bindPopup(popupHtml);
+
+    // 🔹 EFECTO DE PARPADEO
+    if (parpadeo) {
+      let visible = true;
+      setInterval(() => {
+        marker.setIcon(createIcon(visible ? 'red' : 'grey'));
+        visible = !visible;
+      }, 500);
+    }
+
+    // doble click para eliminar (solo para pruebas)
+    marker.on('dblclick', () => {
+      if (confirm('¿Eliminar este reporte?')) {
+        map.removeLayer(marker);
+        db.ref('reportes/' + key).remove();
+      }
+    });
+
+    return marker;
+  }
+
+  // CARGAR TODOS los reportes para mostrarlos en el mapa (aprobados + pendientes)
+  db.ref('reportes').once('value').then(snapshot => {
+    const reportCount = {}; // para agrupar por coordenadas
+    snapshot.forEach(child => {
+      const data = child.val();
+      if (!data) return;
+      // agrupar por coord redondeada (incluso si faltan lat/lng salta)
+      if (data.lat == null || data.lng == null) return;
+      const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
+      if (!reportCount[keyCoords]) reportCount[keyCoords] = 0;
+      reportCount[keyCoords]++;
+    });
+
+    snapshot.forEach(child => {
+      const data = child.val();
+      if (!data) return;
+      if (data.lat == null || data.lng == null) return;
+      const key = child.key;
+      const keyCoords = `${roundCoord(data.lat)},${roundCoord(data.lng)}`;
+      const count = reportCount[keyCoords] || 0;
+      const color = getMarkerColor(count);
+      const icon = createIcon(color);
+      addMarker(data.lat, data.lng, key, icon, data.street || 'Calle desconocida, Tijuana', data.description || '', data);
+    });
+  }).catch(err => console.error(err));
+
+  /* ---------- CARGAR LISTA DE REPORTES (solo 'aprobado') ---------- */
+  function cargarListaReportes() {
+    const listaContainer = document.getElementById('listaReportes');
+    db.ref('reportes').once('value').then(snapshot => {
+      listaContainer.innerHTML = '';
+      const items = [];
+      snapshot.forEach(child => {
+        const data = child.val();
+        if (!data) return;
+        if (data.status !== 'aprobado') return; // solo aprobados en la lista
+        items.push({ id: child.key, val: data });
       });
-    });
 
-    // -------------------------------------------------------------
-    const overlay = document.getElementById('overlay');
-    const formContainer = document.getElementById('formContainer');
-    const closeForm = document.getElementById('closeForm');
-    const formQueja = document.getElementById('formQueja');
-    const btnAgregar = document.getElementById('btnAgregarQueja');
-    const mapMessage = document.getElementById('mapMessage');
+      if (items.length === 0) {
+        listaContainer.innerHTML = '<p style="color:#666;">No hay reportes aprobados actualmente.</p>';
+        return;
+      }
 
-    btnAgregar.addEventListener('click', () => {
-      overlay.style.display = 'block';
-      formContainer.style.display = 'block';
-    });
-
-    closeForm.addEventListener('click', () => {
-      overlay.style.display = 'none';
-      formContainer.style.display = 'none';
-    });
-
-    let colocarMarcadorActivo = false;
-
-    formQueja.addEventListener('submit', (e) => {
-      e.preventDefault();
-      overlay.style.display = 'none';
-      formContainer.style.display = 'none';
-      mapMessage.style.display = 'block';
-      colocarMarcadorActivo = true;
-    });
-
-    map.on('click', function(ev){
-      if(!colocarMarcadorActivo) return;
-      colocarMarcadorActivo = false;
-      mapMessage.style.display = 'none';
-
-      const { lat, lng } = ev.latlng;
-      const problema = document.getElementById('problema').value;
-      const descripcion = document.getElementById('descripcion').value;
-
-      const nuevaPestaña = window.open('', '_blank');
-
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-        .then(res => res.json())
-        .then(data => {
-          const street = data.address?.road || 'Calle desconocida';
-          const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
-          const fullStreet = `${street}, ${city}`;
+      // mostrar cada uno
+      items.forEach(item => {
+        const data = item.val;
         
-          db.ref("reportes").push({
-             lat: lat,
-             lng: lng,
-             street: fullStreet,
-             description: `${problema}: ${descripcion}`,
-             fechaCreacion: Date.now(),
-             status: "pendiente",
-             foto: "reporte1.jpg",
-             estado: "pendiente"
-          });
+        // Cálculo de días mejorado
+        const fechaCreacionMs = data.fechaCreacion ? (data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion) : Date.now();
+        const diasPasados = calcularDiasUTC(fechaCreacionMs);
+        
+        const card = document.createElement('div');
+        card.className = 'reporte-card';
+        
+        // Determinar clase de estado
+        let estadoClass = 'estado-pendiente';
+        if (data.status === 'aprobado') estadoClass = 'estado-aprobado';
+        if (data.status === 'resuelto') estadoClass = 'estado-resuelto';
+        
+        card.innerHTML = `
+          <h3>${escapeHtml(data.street || 'Ubicación desconocida')}</h3>
+          <div class="fecha">Reportado hace ${diasPasados} días</div>
+          <div class="descripcion">${escapeHtml(data.description || 'Sin descripción')}</div>
+          <span class="estado ${estadoClass}">${data.status || 'pendiente'}</span>
+          <div style="margin-top:10px;">
+            <a href="?id=${item.id}" style="color:#0056b3; text-decoration:underline;">Ver detalles completos</a>
+          </div>
+        `;
+        listaContainer.appendChild(card);
+      });
+    }).catch(err => {
+      listaContainer.innerHTML = '<p style="color:#666;">Error cargando reportes.</p>';
+      console.error(err);
+    });
+  }
 
+  // Cargar lista inicial de reportes
+  cargarListaReportes();
+
+  /* ---------- UI form y creación de reportes ---------- */
+  const overlay = document.getElementById('overlay');
+  const formContainer = document.getElementById('formContainer');
+  const closeForm = document.getElementById('closeForm');
+  const formQueja = document.getElementById('formQueja');
+  const btnAgregar = document.getElementById('btnAgregarQueja');
+  const mapMessage = document.getElementById('mapMessage');
+
+  btnAgregar.addEventListener('click', () => { overlay.style.display='block'; formContainer.style.display='block'; });
+  closeForm.addEventListener('click', () => { overlay.style.display='none'; formContainer.style.display='none'; });
+
+  let colocarMarcadorActivo = false;
+  formQueja.addEventListener('submit', (e) => {
+    e.preventDefault();
+    overlay.style.display='none';
+    formContainer.style.display='none';
+    mapMessage.style.display='block';
+    colocarMarcadorActivo = true;
+  });
+
+  map.on('click', function(ev){
+    if (!colocarMarcadorActivo) return;
+    colocarMarcadorActivo = false;
+    mapMessage.style.display='none';
+
+    const { lat, lng } = ev.latlng;
+    const problema = document.getElementById('problema').value;
+    const descripcion = document.getElementById('descripcion').value;
+
+    // abrir nueva pestaña primero para evitar bloqueos móviles
+    const nuevaPestaña = window.open('', '_blank');
+
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+      .then(res => res.json())
+      .then(data => {
+        const street = data.address?.road || 'Calle desconocida';
+        const city = data.address?.city || data.address?.town || data.address?.village || 'Tijuana';
+        const fullStreet = `${street}, ${city}`;
+
+        // Guardar en Firebase con timestamp
+        const newRef = db.ref('reportes').push();
+        newRef.set({
+          lat, lng,
+          street: fullStreet,
+          description: `${problema}: ${descripcion}`,
+          status: 'pendiente',
+          timestamp: Date.now(),
+          fechaCreacion: Date.now()
+        }).then(() => {
           nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
-        })
-        .catch(() => {
+          // Recargar lista de reportes después de agregar uno nuevo
+          cargarListaReportes();
+        }).catch(err => {
+          console.error(err);
           nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
         });
-    });
+      })
+      .catch(() => {
+        const newRef = db.ref('reportes').push();
+        newRef.set({
+          lat, lng,
+          street: "Calle desconocida, Tijuana",
+          description: `${problema}: ${descripcion}`,
+          status: 'pendiente',
+          timestamp: Date.now(),
+          fechaCreacion: Date.now()
+        });
+        nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
+        // Recargar lista de reportes después de agregar uno nuevo
+        cargarListaReportes();
+      });
+  });
 
-    // Compatibilidad móvil
-    map.on('touchend', function(ev){
-      if(!colocarMarcadorActivo) return;
-      const touch = ev.originalEvent.changedTouches ? ev.originalEvent.changedTouches[0] : null;
-      if(!touch) return;
+  // soporte táctil
+  map.on('touchend', function(ev){
+    if(!colocarMarcadorActivo) return;
+    const touch = ev.originalEvent.changedTouches ? ev.originalEvent.changedTouches[0] : null;
+    if(!touch) return;
+    const point = map.mouseEventToLatLng(touch);
+    map.fire('click', { latlng: point });
+  });
 
-      const point = map.mouseEventToLatLng(touch);
-      map.fire('click', { latlng: point });
-    });
-  </script>
+} // fin initMap
+
+/* ---------- Event listeners para el menú ---------- */
+document.getElementById("btnActualizaciones").addEventListener("click", (e) => {
+  e.preventDefault();
+  toggleSeccion('actualizaciones');
+});
+
+document.getElementById("btnReportes").addEventListener("click", (e) => {
+  e.preventDefault();
+  toggleSeccion('reportes');
+});
+
+document.getElementById("btnAyuda").addEventListener("click", (e) => {
+  e.preventDefault();
+  toggleSeccion('ayuda');
+});
+
+</script>
 </body>
 </html>
