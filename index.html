@@ -124,7 +124,7 @@
 
     #formContainer h3 { margin-top:0 }
     #formContainer label { font-weight:700; display:block; margin-top:10px }
-    #formContainer input, #formContainer textarea {
+    #formContainer input, #formContainer textarea, #formContainer select {
       width:100%; padding:8px; margin-top:6px;
       border:1px solid #ccc; border-radius:6px
     }
@@ -334,10 +334,63 @@
       font-weight: bold;
     }
 
-    
+    .estado-pendiente { background: #fff3cd; color: #856404; }
+    .estado-proceso { background: #d1ecf1; color: #0c5460; }
+    .estado-resuelto { background: #d4edda; color: #155724; }
+    .estado-aprobado { background: #d4edda; color: #155724; }
+
     .ultima-actualizacion {
       border-left: 4px solid #28a745;
       background: #f8fff8 !important;
+    }
+
+    /* Botón para agregar actualización */
+    .btn-agregar-actualizacion {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    
+    .btn-agregar-actualizacion:hover {
+      background: #218838;
+    }
+
+    /* Botón de login */
+    #btnLogin {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      background: #6a0a24;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 1005;
+      font-size: 14px;
+    }
+
+    #btnLogin:hover {
+      background: #7c002a;
+    }
+
+    /* Indicador de sesión */
+    #sesionInfo {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #28a745;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      z-index: 1005;
+      font-size: 14px;
+      display: none;
     }
 
     @media (max-width:700px){
@@ -365,6 +418,12 @@
         align-items: flex-start;
         gap: 5px;
       }
+      #btnLogin, #sesionInfo {
+        top: 10px;
+        right: 10px;
+        font-size: 12px;
+        padding: 8px 12px;
+      }
     }
   </style>
 </head>
@@ -372,6 +431,10 @@
 
 <h1>Centro de atención CESPT</h1>
 <h2>Atención ciudadana: Quejas, ayudas y reportes</h2>
+
+<!-- Botón de login/sesión -->
+<button id="btnLogin">Acceso Administradores</button>
+<div id="sesionInfo"></div>
 
 <nav class="menu-superior">
   <a href="#actualizaciones" id="btnActualizaciones">Actualizaciones</a>
@@ -451,6 +514,7 @@
 <div id="overlay"></div>
 <div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
 
+<!-- Formulario para agregar queja -->
 <div id="formContainer">
   <span id="closeForm">&times;</span>
   <h3>Nueva Queja</h3>
@@ -460,6 +524,34 @@
     <label>Descripción:</label>
     <textarea id="descripcion" rows="3" placeholder="Describe el problema..." required></textarea>
     <button type="submit">Enviar Queja</button>
+  </form>
+</div>
+
+<!-- Formulario para agregar actualización -->
+<div id="formActualizacionContainer" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; width:360px; box-shadow:0 6px 18px rgba(0,0,0,.3); z-index:1003">
+  <span id="closeFormActualizacion" style="position:absolute; top:8px; right:12px; cursor:pointer; font-weight:700; font-size:20px; color:#333;">&times;</span>
+  <h3>Agregar Actualización</h3>
+  <form id="formActualizacion">
+    <input type="hidden" id="reporteIdActualizacion">
+    <label>Descripción del avance:</label>
+    <textarea id="descripcionActualizacion" rows="4" placeholder="Describe el avance del reporte..." required></textarea>
+    <label>Estado:</label>
+    <label>Técnico asignado:</label>
+    <input type="text" id="tecnicoActualizacion" placeholder="Nombre del técnico">
+    <button type="submit" style="margin-top:15px;">Guardar Actualización</button>
+  </form>
+</div>
+
+<!-- Formulario de login -->
+<div id="formLoginContainer" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; width:300px; box-shadow:0 6px 18px rgba(0,0,0,.3); z-index:1003">
+  <span id="closeFormLogin" style="position:absolute; top:8px; right:12px; cursor:pointer; font-weight:700; font-size:20px; color:#333;">&times;</span>
+  <h3>Acceso Administradores</h3>
+  <form id="formLogin">
+    <label>Usuario:</label>
+    <input type="text" id="usuarioLogin" placeholder="Usuario" required>
+    <label>Contraseña:</label>
+    <input type="password" id="passwordLogin" placeholder="Contraseña" required>
+    <button type="submit" style="margin-top:15px;">Iniciar Sesión</button>
   </form>
 </div>
 
@@ -475,6 +567,9 @@
     <div class="field"><strong>Estado:</strong> <span id="detailEstado"></span></div>
     <div class="field"><strong>Fotos:</strong></div>
     <div id="detailPhotos"></div>
+    <div class="field" style="margin-top:20px;">
+      <button id="btnAgregarActualizacionDetalle" class="btn-agregar-actualizacion" style="display:none;">Agregar Actualización</button>
+    </div>
   </div>
 </div>
 
@@ -503,6 +598,17 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
+/* ---------- Sistema de Autenticación ---------- */
+let usuarioAutenticado = false;
+let mapa = null;
+let marcadores = {};
+
+const usuariosAutorizados = {
+  "admin": "cespt2024",
+  "tecnico1": "tecnico123",
+  "tecnico2": "tecnico456"
+};
 
 /* ---------- Variables globales para el estado del menú ---------- */
 let seccionActual = null;
@@ -587,7 +693,111 @@ document.getElementById("modal").addEventListener("click", function(e) {
   }
 });
 
-/* ---------- SISTEMA DE ACTUALIZACIONES ---------- */
+/* ---------- SISTEMA DE AUTENTICACIÓN ---------- */
+
+function iniciarSesion(usuario, password) {
+  if (usuariosAutorizados[usuario] && usuariosAutorizados[usuario] === password) {
+    usuarioAutenticado = true;
+    localStorage.setItem('cespt_usuario', usuario);
+    actualizarInterfazAutenticacion();
+    cerrarFormularioLogin();
+    return true;
+  }
+  return false;
+}
+
+function cerrarSesion() {
+  usuarioAutenticado = false;
+  localStorage.removeItem('cespt_usuario');
+  actualizarInterfazAutenticacion();
+}
+
+function verificarSesionGuardada() {
+  const usuarioGuardado = localStorage.getItem('cespt_usuario');
+  if (usuarioGuardado && usuariosAutorizados[usuarioGuardado]) {
+    usuarioAutenticado = true;
+    actualizarInterfazAutenticacion();
+  }
+}
+
+function actualizarInterfazAutenticacion() {
+  const btnLogin = document.getElementById('btnLogin');
+  const sesionInfo = document.getElementById('sesionInfo');
+  
+  if (usuarioAutenticado) {
+    const usuario = localStorage.getItem('cespt_usuario');
+    btnLogin.style.display = 'none';
+    sesionInfo.style.display = 'block';
+    sesionInfo.innerHTML = `Conectado como: ${usuario} <button onclick="cerrarSesion()" style="margin-left:10px; background:#dc3545; color:white; border:none; border-radius:3px; padding:2px 6px; cursor:pointer;">Cerrar</button>`;
+    
+    // Mostrar botones de actualización
+    document.querySelectorAll('.btn-agregar-actualizacion').forEach(btn => {
+      btn.style.display = 'inline-block';
+    });
+    
+    // Actualizar popups del mapa
+    actualizarPopupsMapa();
+  } else {
+    btnLogin.style.display = 'block';
+    sesionInfo.style.display = 'none';
+    
+    // Ocultar botones de actualización
+    document.querySelectorAll('.btn-agregar-actualizacion').forEach(btn => {
+      btn.style.display = 'none';
+    });
+    
+    // Actualizar popups del mapa
+    actualizarPopupsMapa();
+  }
+}
+
+function actualizarPopupsMapa() {
+  if (!mapa) return;
+  
+  Object.keys(marcadores).forEach(key => {
+    const marker = marcadores[key];
+    const popup = marker.getPopup();
+    if (popup) {
+      const content = popup.getContent();
+      const newContent = content.replace(
+        /<button class="btn-agregar-actualizacion".*?<\/button>/g, 
+        usuarioAutenticado ? 
+          `<button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${key}')">Agregar Actualización</button>` 
+          : ''
+      );
+      marker.setPopupContent(newContent);
+    }
+  });
+}
+
+function abrirFormularioLogin() {
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('formLoginContainer').style.display = 'block';
+}
+
+function cerrarFormularioLogin() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('formLoginContainer').style.display = 'none';
+  document.getElementById('formLogin').reset();
+}
+
+// Event listeners para autenticación
+document.getElementById('btnLogin').addEventListener('click', abrirFormularioLogin);
+document.getElementById('closeFormLogin').addEventListener('click', cerrarFormularioLogin);
+
+document.getElementById('formLogin').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const usuario = document.getElementById('usuarioLogin').value;
+  const password = document.getElementById('passwordLogin').value;
+  
+  if (iniciarSesion(usuario, password)) {
+    alert('Inicio de sesión exitoso');
+  } else {
+    alert('Usuario o contraseña incorrectos');
+  }
+});
+
+/* ---------- SISTEMA DE ACTUALIZACIONES MEJORADO ---------- */
 
 // CARGAR ACTUALIZACIONES DE REPORTES
 function cargarActualizacionesReportes() {
@@ -685,19 +895,16 @@ function mostrarActualizacionesEnLista(reportes, contenedor) {
             ${index > 0 ? 'border-top: 1px dashed #ddd;' : ''}
           ">
             <div style="font-weight: bold; color: #7c002a; margin-bottom: 5px;">
-              ${actualizacion.titulo || 'Actualización'}
+              Actualización
             </div>
             <div style="color: #333; margin-bottom: 5px;">
               ${actualizacion.descripcion || 'Sin descripción adicional'}
             </div>
             <div class="actualizacion-meta">
               <span>${new Date(actualizacion.fecha).toLocaleString('es-MX')}</span>
-              ${actualizacion.estado ? `
-                <span class="badge-estado estado-${actualizacion.estado}">
-                  ${actualizacion.estado}
-                </span>
-              ` : ''}
+             
               ${actualizacion.tecnico ? `<span>Técnico: ${actualizacion.tecnico}</span>` : ''}
+              ${actualizacion.usuario ? `<span>Por: ${actualizacion.usuario}</span>` : ''}
             </div>
           </div>
         `).join('')}
@@ -723,6 +930,109 @@ function mostrarActualizacionesEnLista(reportes, contenedor) {
   contenedor.appendChild(contador);
   contenedor.insertAdjacentHTML('beforeend', html);
 }
+
+/* ---------- SISTEMA PARA AGREGAR ACTUALIZACIONES ---------- */
+
+// Función para abrir el formulario de actualización
+function abrirFormularioActualizacion(reporteId) {
+  if (!usuarioAutenticado) {
+    alert('Solo el personal autorizado puede agregar actualizaciones. Por favor, inicie sesión.');
+    abrirFormularioLogin();
+    return;
+  }
+  
+  document.getElementById('reporteIdActualizacion').value = reporteId;
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('formActualizacionContainer').style.display = 'block';
+}
+
+// Función para cerrar el formulario de actualización
+function cerrarFormularioActualizacion() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('formActualizacionContainer').style.display = 'none';
+  document.getElementById('formActualizacion').reset();
+}
+
+// Función para guardar una actualización
+function guardarActualizacion(reporteId, descripcion, estado, tecnico) {
+  if (!usuarioAutenticado) {
+    alert('Error de autenticación. Por favor, inicie sesión nuevamente.');
+    return;
+  }
+  
+  const nuevaActualizacion = {
+    titulo: "Actualización", // Siempre será "Actualización"
+    descripcion: descripcion,
+    estado: estado,
+    tecnico: tecnico || '',
+    fecha: Date.now(),
+    usuario: localStorage.getItem('cespt_usuario')
+  };
+  
+  // Obtener referencia al reporte
+  const reporteRef = db.ref('reportes/' + reporteId);
+  
+  // Obtener el reporte actual para actualizar el estado
+  reporteRef.once('value').then(snapshot => {
+    const reporte = snapshot.val();
+    const actualizaciones = reporte.actualizaciones || {};
+    
+    // Agregar la nueva actualización
+    const nuevaKey = db.ref().child('actualizaciones').push().key;
+    actualizaciones[nuevaKey] = nuevaActualizacion;
+    
+    // Actualizar el reporte con la nueva actualización y el nuevo estado
+    reporteRef.update({
+      actualizaciones: actualizaciones,
+      status: estado  // Actualizar el estado principal del reporte
+    }).then(() => {
+      alert('Actualización guardada correctamente');
+      cerrarFormularioActualizacion();
+      
+      // Recargar las actualizaciones si estamos en esa sección
+      if (seccionActual === 'actualizaciones') {
+        cargarActualizacionesReportes();
+      }
+      
+      // Actualizar el marcador en el mapa si existe
+      if (marcadores[reporteId]) {
+        actualizarMarcadorEnMapa(reporteId, estado);
+      }
+    }).catch(error => {
+      console.error('Error al guardar la actualización:', error);
+      alert('Error al guardar la actualización');
+    });
+  });
+}
+
+// Función para actualizar el marcador en el mapa
+function actualizarMarcadorEnMapa(reporteId, nuevoEstado) {
+  if (marcadores[reporteId] && mapa) {
+    // Aquí puedes cambiar el icono del marcador según el estado
+    let color = 'blue';
+    if (nuevoEstado === 'pendiente') color = 'blue';
+    if (nuevoEstado === 'aprobado') color = 'orange';
+    if (nuevoEstado === 'resuelto') color = 'green';
+    
+    const nuevoIcono = createIcon(color);
+    marcadores[reporteId].setIcon(nuevoIcono);
+  }
+}
+
+// Event listener para el formulario de actualización
+document.getElementById('formActualizacion').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const reporteId = document.getElementById('reporteIdActualizacion').value;
+  const descripcion = document.getElementById('descripcionActualizacion').value;
+  const estado = document.getElementById('estadoActualizacion').value;
+  const tecnico = document.getElementById('tecnicoActualizacion').value;
+  
+  guardarActualizacion(reporteId, descripcion, estado, tecnico);
+});
+
+// Event listener para cerrar el formulario de actualización
+document.getElementById('closeFormActualizacion').addEventListener('click', cerrarFormularioActualizacion);
 
 /* ---------- FUNCIONALIDAD DE BUSCADORES ---------- */
 
@@ -1002,20 +1312,29 @@ function mostrarDetalle(id){
     e.preventDefault();
     window.location.href = window.location.pathname;
   });
+  
+  // Mostrar/ocultar botón de actualización según autenticación
+  const btnActualizacion = document.getElementById('btnAgregarActualizacionDetalle');
+  if (usuarioAutenticado) {
+    btnActualizacion.style.display = 'inline-block';
+    btnActualizacion.onclick = () => abrirFormularioActualizacion(detailId);
+  } else {
+    btnActualizacion.style.display = 'none';
+  }
 }
 
 /* ---------- FUNCIONES MAPA (cuando no hay ?id) ---------- */
 function initMap(){
-  const map = L.map('map');
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+  mapa = L.map('map');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(mapa);
 
   fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
     .then(r => r.json())
     .then(data => {
-      if (data.length > 0) map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
-      else map.setView([32.533, -117.033], 12);
+      if (data.length > 0) mapa.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12);
+      else mapa.setView([32.533, -117.033], 12);
     })
-    .catch(()=> map.setView([32.533, -117.033], 12));
+    .catch(()=> mapa.setView([32.533, -117.033], 12));
 
   function addMarker(lat, lng, key, street, descripcion = '', rawData = {}, count = 1){
     // CÁLCULO DE DÍAS MEJORADO
@@ -1026,7 +1345,10 @@ function initMap(){
     const { color, parpadeo } = determinarColorYParpadeo(diasPasados, count);
     const icon = createIcon(color);
     
-    const marker = L.marker([lat, lng], { icon }).addTo(map);
+    const marker = L.marker([lat, lng], { icon }).addTo(mapa);
+    
+    // Guardar referencia al marcador
+    marcadores[key] = marker;
     
     const streetEsc = escapeHtml(street || 'Calle desconocida, Tijuana');
     const descEsc = escapeHtml(descripcion || '');
@@ -1038,6 +1360,11 @@ function initMap(){
       <div style="margin-top:8px"><strong>Días transcurridos:</strong> ${diasPasados} días</div>
       <div style="margin-top:8px"><strong>Reportes cercanos:</strong> ${count}</div>
       <div style="margin-top:8px" class="popup-link"><a href="?id=${key}">Ver más</a></div>
+      ${usuarioAutenticado ? `
+        <div style="margin-top:8px">
+          <button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${key}')">Agregar Actualización</button>
+        </div>
+      ` : ''}
     `;
 
     marker.bindPopup(popupHtml);
@@ -1046,7 +1373,7 @@ function initMap(){
     if (parpadeo) {
       let visible = true;
       const intervalo = setInterval(() => {
-        if (map.hasLayer(marker)) {
+        if (mapa.hasLayer(marker)) {
           marker.setIcon(createIcon(visible ? 'red' : 'grey'));
           visible = !visible;
         } else {
@@ -1058,8 +1385,9 @@ function initMap(){
     // doble click para eliminar (solo para pruebas)
     marker.on('dblclick', () => {
       if (confirm('¿Eliminar este reporte?')) {
-        map.removeLayer(marker);
+        mapa.removeLayer(marker);
         db.ref('reportes/' + key).remove();
+        delete marcadores[key];
       }
     });
 
@@ -1121,10 +1449,13 @@ function initMap(){
         const card = document.createElement('div');
         card.className = 'reporte-card';
         
-        // Determinar clase de estado
+        // Determinar clase de estado CORREGIDO
         let estadoClass = 'estado-pendiente';
-        if (data.status === 'aprobado') estadoClass = 'estado-aprobado';
-        if (data.status === 'resuelto') estadoClass = 'estado-resuelto';
+        if (data.status === 'aprobado') {
+          estadoClass = 'estado-aprobado';
+        } else if (data.status === 'resuelto') {
+          estadoClass = 'estado-resuelto';
+        }
         
         card.innerHTML = `
           <h3>${escapeHtml(data.street || 'Ubicación desconocida')}</h3>
@@ -1133,6 +1464,9 @@ function initMap(){
           <span class="estado ${estadoClass}">${data.status || 'pendiente'}</span>
           <div style="margin-top:10px;">
             <a href="?id=${item.id}" style="color:#0056b3; text-decoration:underline;">Ver detalles completos</a>
+            ${usuarioAutenticado ? `
+              <button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${item.id}')" style="margin-left:10px;">Agregar Actualización</button>
+            ` : ''}
           </div>
         `;
         listaContainer.appendChild(card);
@@ -1170,7 +1504,7 @@ function initMap(){
     colocarMarcadorActivo = true;
   });
 
-  map.on('click', function(ev){
+  mapa.on('click', function(ev){
     if (!colocarMarcadorActivo) return;
     colocarMarcadorActivo = false;
     mapMessage.style.display='none';
@@ -1224,12 +1558,12 @@ function initMap(){
   });
 
   // soporte táctil
-  map.on('touchend', function(ev){
+  mapa.on('touchend', function(ev){
     if(!colocarMarcadorActivo) return;
     const touch = ev.originalEvent.changedTouches ? ev.originalEvent.changedTouches[0] : null;
     if(!touch) return;
-    const point = map.mouseEventToLatLng(touch);
-    map.fire('click', { latlng: point });
+    const point = mapa.mouseEventToLatLng(touch);
+    mapa.fire('click', { latlng: point });
   });
 
 } // fin initMap
@@ -1250,8 +1584,11 @@ document.getElementById("btnAyuda").addEventListener("click", (e) => {
   toggleSeccion('ayuda');
 });
 
-// INICIALIZAR BUSCADORES AL CARGAR LA PÁGINA
+// INICIALIZAR SISTEMA DE AUTENTICACIÓN AL CARGAR
 document.addEventListener('DOMContentLoaded', function() {
+  verificarSesionGuardada();
+  actualizarInterfazAutenticacion();
+  
   // Inicializar buscadores estáticos si existen
   if (document.getElementById('buscadorActualizaciones')) {
     inicializarBuscadorActualizaciones();
