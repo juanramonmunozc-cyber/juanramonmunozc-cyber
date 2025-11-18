@@ -926,8 +926,8 @@ padding:30px; border-radius:10px; border:2px solid #ddd;">
       <option value="aprobado">Aprobado</option>
       <option value="resuelto">Resuelto</option>
     </select>
-    <label>Técnico asignado:</label>
-    <p><input type="text" id="tecnicoActualizacion" placeholder="Nombre del técnico"></p>
+    <p><label>Técnico asignado:</label></p>
+    <p><input type="text" id="tecnicoActualizacion" placeholder="Nombre del técnico"><p></p>
     <button type="submit" style="margin-top:15px;">Guardar Actualización</button>
   </form>
 </div>
@@ -1143,7 +1143,7 @@ function actualizarInterfazAutenticacion() {
       btn.style.display = 'inline-block';
     });
     
-    // Actualizar popups del mapa
+    // ACTUALIZAR POPUPS DEL MAPA - ESTA LÍNEA ES CRÍTICA
     actualizarPopupsMapa();
   } else {
     btnLogin.style.display = 'block';
@@ -1154,7 +1154,7 @@ function actualizarInterfazAutenticacion() {
       btn.style.display = 'none';
     });
     
-    // Actualizar popups del mapa
+    // ACTUALIZAR POPUPS DEL MAPA - ESTA LÍNEA ES CRÍTICA
     actualizarPopupsMapa();
   }
 }
@@ -1166,14 +1166,37 @@ function actualizarPopupsMapa() {
     const marker = marcadores[key];
     const popup = marker.getPopup();
     if (popup) {
-      const content = popup.getContent();
-      const newContent = content.replace(
-        /<button class="btn-agregar-actualizacion".*?</button>
-        usuarioAutenticado ? 
-          `<button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${key}')">Agregar Actualización</button>` 
-          : ''
-      );
-      marker.setPopupContent(newContent);
+      let content = popup.getContent();
+      
+      // Buscar y reemplazar el botón de actualización
+      const botonActualizacionRegex = /<button class="btn-agregar-actualizacion"[^>]*>.*?<\/button>/gi;
+      
+      if (usuarioAutenticado) {
+        // Si el usuario está autenticado, agregar/actualizar el botón
+        if (content.includes('btn-agregar-actualizacion')) {
+          // Reemplazar el botón existente
+          content = content.replace(botonActualizacionRegex, 
+            `<button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${key}')">Agregar Actualización</button>`);
+        } else {
+          // Agregar el botón si no existe
+          // Buscar donde insertarlo (después del enlace "Ver más")
+          const verMasIndex = content.indexOf('</a></div>');
+          if (verMasIndex !== -1) {
+            const before = content.substring(0, verMasIndex + 10); // +10 para incluir </a></div>
+            const after = content.substring(verMasIndex + 10);
+            content = before + 
+              `<div style="margin-top:8px">
+                <button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${key}')">Agregar Actualización</button>
+              </div>` + 
+              after;
+          }
+        }
+      } else {
+        // Si el usuario NO está autenticado, eliminar el botón
+        content = content.replace(botonActualizacionRegex, '');
+      }
+      
+      marker.setPopupContent(content);
     }
   });
 }
