@@ -920,15 +920,14 @@ padding:30px; border-radius:10px; border:2px solid #ddd;">
   <form id="formActualizacion">
     <input type="hidden" id="reporteIdActualizacion">
     <label>Descripción del avance:</label>
-    <textarea id="descripcionActualizacion" rows="4" placeholder="Describe el avance del reporte..." required></textarea>
+    <p><textarea id="descripcionActualizacion" rows="4" placeholder="Describe el avance del reporte..." required></textarea></p>
     <label>Estado:</label>
     <select id="estadoActualizacion" required>
-      <option value="pendiente">Pendiente</option>
       <option value="aprobado">Aprobado</option>
       <option value="resuelto">Resuelto</option>
     </select>
     <label>Técnico asignado:</label>
-    <input type="text" id="tecnicoActualizacion" placeholder="Nombre del técnico">
+    <p><input type="text" id="tecnicoActualizacion" placeholder="Nombre del técnico"></p>
     <button type="submit" style="margin-top:15px;">Guardar Actualización</button>
   </form>
 </div>
@@ -1169,7 +1168,7 @@ function actualizarPopupsMapa() {
     if (popup) {
       const content = popup.getContent();
       const newContent = content.replace(
-        /<button class="btn-agregar-actualizacion".*?<\/button>/g, 
+        /<button class="btn-agregar-actualizacion".*?</button>
         usuarioAutenticado ? 
           `<button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${key}')">Agregar Actualización</button>` 
           : ''
