@@ -15,7 +15,11 @@
       padding:0;     
       background:#f2f2f2; 
     }
-
+/* ==== FIX PARA EVITAR DESBORDAMIENTO HORIZONTAL ==== */
+    html, body {
+      width: 100% !important;
+      overflow-x: hidden !important;
+    }
     h1 { color:#7c002a; margin-top:18px; font-size:40px; text-align:center; font-weight:700; }
     h2 { color:#7c002a; margin-top:6px; font-size:20px; text-align:center; font-weight:500; }
 
@@ -523,6 +527,143 @@
         width: 100%;
       }
     }
+      .footer-gob {
+        background: #3d3c3c;
+        color: white;
+        padding: 40px 20px 0;
+        font-family: 'Arial', sans-serif;
+        width: 100%;
+      }
+
+      .footer-container {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 40px;
+        max-width: 1400px;
+        margin: auto;
+        padding-bottom: 30px;
+        width: 100%;
+      }
+
+      .footer-col {
+        min-width: 180px;
+        flex: 1;
+      }
+
+      .footer-col h3 {
+        color: #d6c28a;
+        margin-bottom: 10px;
+        font-size: 17px;
+      }
+
+      .footer-col ul {
+        list-style: none;
+        padding: 0;
+      margin: 0;
+      }
+
+      .footer-col li {
+        margin-bottom: 8px;
+         font-size: 14px;
+      }
+
+/* Logo */
+     .logo-col {
+      text-align: center;
+      flex: 1.2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-col h2 {
+      margin: 10px 0 0;
+      font-size: 26px;
+      line-height: 22px;
+    }
+
+      .logo-col .escudo {
+        width: 170px;
+        height: 170px;
+        background-image: url("https://i.postimg.cc/0NMGTZk5/yaestodajejej.png"); 
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        margin-bottom: 10px;
+      }
+
+/* Clima */
+      .clima-col .clima-box {
+        border: 1px solid #ffffff30;
+        padding: 12px;
+        border-radius: 8px;
+        background: #ffffff10;
+        width: 220px;
+      }
+
+      .clima-top {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .clima-icon-img {
+        width: 56px;
+        height: 56px;
+        display: block;
+      }
+
+      .clima-details {
+        display: block;
+        margin-top: 8px;
+        font-size: 13px;
+        color: #fff;
+        opacity: 0.95;
+      }
+
+      .clima-details span {
+        display: block;
+        margin: 4px 0;
+      }
+
+      .prevision {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+      }
+
+      .prevision .dia {
+        min-width: 46px;
+        text-align: center;
+        font-size: 12px;
+        color: #fff;
+        background: #ffffff15;
+        padding: 6px;
+        border-radius: 6px;
+      }
+
+      .prevision .dia .dtemp {
+        font-weight: 700;
+        display: block;
+        margin-top: 6px;
+      }
+
+/* Copy */
+      .footer-copy {
+        width: 100vw !important;
+        margin: 0 !important;
+        padding: 12px;
+        background: #7c002a;
+        text-align: center;
+        color: white;
+        font-size: 14px;
+        position: relative;
+        left: 50%;
+        right: 50%;
+        transform: translateX(-50%);
+      }
   </style>
 </head>
 <body>
@@ -552,7 +693,7 @@
   <!-- BUSCADOR ACTUALIZACIONES -->
   <div style="margin-bottom: 20px;">
     <input type="text" id="buscadorActualizaciones" placeholder="🔍 Buscar en actualizaciones..." 
-           style="width: 100%; padding: 12px; border: 2px solid #7c002a; border-radius: 8px; font-size: 16px;">
+           style="width: calc(100% - 10px); padding: 12px; border: 2px solid #7c002a; border-radius: 8px; font-size: 16px;">
   </div>
 
   <div id="contenidoActualizaciones">
@@ -648,6 +789,91 @@
     </div>
   </div>
 </div>
+<section id="recomendaciones" class="seccion"
+style="position:relative; max-width:1000px; margin:40px auto; background:#fff;
+padding:30px; border-radius:10px; border:2px solid #ddd;">
+
+  <!-- TÍTULO  -->
+  <div style="display:flex; align-items:center; margin-bottom:25px;">
+    <!-- Barra lateral gobiernojejej -->
+    <div style="width:12px; height:45px; background:#7c002a; border-radius:3px; margin-right:15px;"></div>
+
+    <h2 style="margin:0; font-size:32px; font-weight:700; color:#333;">
+      Recomendaciones en caso de:
+    </h2>
+  </div>
+
+  <!-- GRID DE TARJETAS -->
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:20px;">
+
+    <!-- 1 -->
+    <div style="border:1px solid #ddd; padding:20px; border-radius:10px; background:#fafafa;">
+      <h3 style="margin-top:0; color:#7c002a;">Fuga de Agua</h3>
+      <p style="margin:0;">
+        • Cierra la llave de paso principal.<br>
+        • Evita usar dispositivos eléctricos cerca.<br>
+        • Reporta inmediatamente al área correspondiente.<br>
+        • Si el agua es turbia o huele mal, no la utilices.
+      </p>
+    </div>
+
+    <!--  2 -->
+    <div style="border:1px solid #ddd; padding:20px; border-radius:10px; background:#fafafa;">
+      <h3 style="margin-top:0; color:#7c002a;">Poste Caído</h3>
+      <p style="margin:0;">
+        • No te acerques ni toques cables sueltos.<br>
+        • Mantén alejadas a otras personas.<br>
+        • Reporta de inmediato a emergencias o a la compañía de energía.<br>
+        • No intentes mover el poste.
+      </p>
+    </div>
+
+    <!-- 3 -->
+    <div style="border:1px solid #ddd; padding:20px; border-radius:10px; background:#fafafa;">
+      <h3 style="margin-top:0; color:#7c002a;">Fallas de Luz</h3>
+      <p style="margin:0;">
+        • Verifica si solo tu casa está afectada.<br>
+        • No manipules el medidor.<br>
+        • Desconecta aparatos sensibles.<br>
+        • Reporta el fallo si persiste.
+      </p>
+    </div>
+
+    <!-- 4 -->
+    <div style="border:1px solid #ddd; padding:20px; border-radius:10px; background:#fafafa;">
+      <h3 style="margin-top:0; color:#7c002a;">Olor a Gas</h3>
+      <p style="margin:0;">
+        • No prendas luces ni aparatos eléctricos.<br>
+        • Ventila abriendo puertas y ventanas.<br>
+        • Cierra la llave del tanque si es seguro hacerlo.<br>
+        • Desaloja si el olor es fuerte y reporta.
+      </p>
+    </div>
+
+    <!--  5  -->
+    <div style="border:1px solid #ddd; padding:20px; border-radius:10px; background:#fafafa;">
+      <h3 style="margin-top:0; color:#7c002a;">Alcantarilla Tapada</h3>
+      <p style="margin:0;">
+        • Evita destapar por tu cuenta.<br>
+        • No arrojes objetos o basura.<br>
+        • Reporta de inmediato para evitar inundaciones.<br>
+        • Mantén a niños alejados del área.
+      </p>
+    </div>
+
+    <!--  6  -->
+    <div style="border:1px solid #ddd; padding:20px; border-radius:10px; background:#fafafa;">
+      <h3 style="margin-top:0; color:#7c002a;">Incendio Cercano</h3>
+      <p style="margin:0;">
+        • Mantén la calma y evacua la zona.<br>
+        • No intentes apagarlo si es grande.<br>
+        • Llama inmediatamente al 911.<br>
+        • Evita inhalar humo o acercarte.
+      </p>
+    </div>
+
+  </div>
+</section>
 
 <button id="btnAgregarQueja">Agregar Queja</button>
 <div id="overlay"></div>
@@ -1894,6 +2120,187 @@ document.addEventListener('DOMContentLoaded', function() {
   if (document.getElementById('buscadorActualizaciones')) {
     inicializarBuscadorActualizaciones();
   }
+});
+</script>
+<footer class="footer-gob">
+  <div class="footer-container">
+
+    <!-- Columna 1: Logo + gobierno -->
+    <div class="footer-col logo-col">
+      <div class="escudo"></div>
+      <h2>BAJA<br>CALIFORNIA</h2>
+      <p>Atención ciudadana</p>
+    </div>
+
+    <!-- Columna 2: Servicios -->
+    <div class="footer-col">
+      <h3>CONTACTO</h3>
+      <ul>
+        <li>Muñoz Chavez Juan Ramón</li>
+        <li>Departamento de sistemas computacionales.</li>
+      </ul>
+    </div>
+
+    <!-- Columna 3: Ligas -->
+    <div class="footer-col">
+      <h3>CONTACTO</h3>
+      <ul>
+        <li>Cazares Manzo Nicole Alexandra.</li>
+        <li>Departamento de sistemas computacionales.</li>
+
+      </ul>
+    </div>
+
+    <!-- Columna 4: Contacto -->
+    <div class="footer-col">
+      <h3>CONTACTO</h3>
+      <ul>
+        <li>25213438</li>
+        <li>25213719</li>
+      </ul>
+    </div>
+
+   <div class="clima-col">
+  <h3>CLIMA EN TIJUANA</h3>
+
+  <div class="clima-box">
+    <div class="clima-top">
+      <div class="clima-icon"><img class="clima-icon-img" alt="icono clima" /></div>
+      <div>
+        <p class="temp">--°C</p>
+        <p class="estado">Cargando...</p>
+        <p class="hora">Actualizando...</p>
+      </div>
+    </div>
+
+    <div class="clima-details">
+      <span class="feels">Sensación: --°C</span>
+      <span class="hum">Humedad: --%</span>
+      <span class="wind">Viento: -- m/s</span>
+      <span class="minmax">Min: --°C • Max: --°C</span>
+    </div>
+
+    <div class="prevision">
+      <!-- Aquí irá el pronóstico de 5 días -->
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer-copy">
+    © 2025 - Proyecto InovaTec | Aviso de Privacidad
+  </div>
+</footer>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const apiKey = "b9a5af336592edd3ee2224e8ef0147c3"; // pon aquí tu API key
+  const ciudad = "Tijuana,mx";
+  const unidades = "metric";
+  const lang = "es";
+
+  const selectors = {
+    temp: ".temp",
+    estado: ".estado",
+    hora: ".hora",
+    iconImg: ".clima-icon-img",
+    feels: ".feels",
+    hum: ".hum",
+    wind: ".wind",
+    minmax: ".minmax",
+    prevision: ".prevision"
+  };
+
+  function qs(sel){ return document.querySelector(sel); }
+
+  async function cargarClimaActual() {
+    try {
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(ciudad)}&units=${unidades}&lang=${lang}&appid=${apiKey}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const data = await resp.json();
+
+      const temp = Math.round(data.main.temp);
+      const desc = (data.weather && data.weather[0] && data.weather[0].description) ? data.weather[0].description : "";
+      const icon = (data.weather && data.weather[0] && data.weather[0].icon) ? data.weather[0].icon : null;
+      const feels = Math.round(data.main.feels_like);
+      const hum = data.main.humidity;
+      const wind = data.wind && data.wind.speed ? data.wind.speed : null;
+      const tempMin = Math.round(data.main.temp_min);
+      const tempMax = Math.round(data.main.temp_max);
+
+      if (qs(selectors.temp)) qs(selectors.temp).textContent = `${temp}°C`;
+      if (qs(selectors.estado)) qs(selectors.estado).textContent = desc;
+      if (qs(selectors.hora)) qs(selectors.hora).textContent = `Actualizado ${new Date().toLocaleTimeString()}`;
+      if (qs(selectors.feels)) qs(selectors.feels).textContent = `Sensación: ${feels}°C`;
+      if (qs(selectors.hum)) qs(selectors.hum).textContent = `Humedad: ${hum}%`;
+      if (qs(selectors.wind)) qs(selectors.wind).textContent = `Viento: ${wind ?? '--'} m/s`;
+      if (qs(selectors.minmax)) qs(selectors.minmax).textContent = `Min: ${tempMin}°C • Max: ${tempMax}°C`;
+
+      if (icon && qs(selectors.iconImg)) {
+        qs(selectors.iconImg).src = `https://openweathermap.org/img/wn/${icon}@2x.png`;
+        qs(selectors.iconImg).alt = desc;
+      }
+    } catch (err) {
+      console.error("Error obteniendo clima actual:", err);
+      if (qs(selectors.estado)) qs(selectors.estado).textContent = "No disponible";
+    }
+  }
+
+  // Pronóstico 5 días (agrupa por día usando /forecast, valores cada 3 horas)
+  async function cargarPronostico5dias() {
+    try {
+      const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(ciudad)}&units=${unidades}&lang=${lang}&appid=${apiKey}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const data = await resp.json();
+      const list = data.list || [];
+
+      // Agrupar por fecha (YYYY-MM-DD)
+      const dias = {};
+      list.forEach(item => {
+        const date = new Date(item.dt * 1000);
+        const diaKey = date.toISOString().slice(0,10);
+        if (!dias[diaKey]) dias[diaKey] = [];
+        dias[diaKey].push(item);
+      });
+
+      const claves = Object.keys(dias).slice(0,5); // primeros 5 días
+      const cont = qs(selectors.prevision);
+      if (!cont) return;
+      cont.innerHTML = "";
+
+      claves.forEach(k => {
+        const entradas = dias[k];
+        // obtener temp promedio o el que esté a las 12:00 si existe
+        let elegido = entradas.find(e => new Date(e.dt*1000).getHours() === 12) || entradas[Math.floor(entradas.length/2)];
+        const temp = Math.round(elegido.main.temp);
+        const icon = elegido.weather && elegido.weather[0] && elegido.weather[0].icon ? elegido.weather[0].icon : null;
+        const diaNombre = new Date(k).toLocaleDateString(undefined, { weekday: 'short' }); // ej. "lun"
+
+        const div = document.createElement('div');
+        div.className = "dia";
+        div.innerHTML = `
+          <div class="dday">${diaNombre}</div>
+          ${icon ? `<div><img src="https://openweathermap.org/img/wn/${icon}.png" alt="" /></div>` : ''}
+          <div class="dtemp">${temp}°</div>
+        `;
+        cont.appendChild(div);
+      });
+
+    } catch (err) {
+      console.error("Error obteniendo pronóstico:", err);
+    }
+  }
+
+  // carga inicial
+  cargarClimaActual();
+  cargarPronostico5dias();
+
+  // actualiza cada 10 minutos
+  setInterval(() => { cargarClimaActual(); cargarPronostico5dias(); }, 600000);
+
 });
 </script>
 </body>
