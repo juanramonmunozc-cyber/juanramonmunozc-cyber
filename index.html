@@ -3,9 +3,10 @@
 <head> 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Centro de Atención - Quejas y Reportes</title>
+  <title>Centro de Atención CESPT - Quejas y Reportes</title>
   <link rel="icon" type="image/png" href="crisis.png">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
     body {
@@ -57,8 +58,51 @@
       border-radius:10px;
       border:2px solid #7c002a;
       font-size:16px;
+      position: relative;
     }
     .oculto { display:none; }
+
+    /* BOTÓN DE ADMINISTRADORES COMO CÍRCULO */
+    #btnLogin {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background: #6a0a24;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 1005;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+    }
+
+    #btnLogin:hover {
+      background: #7c002a;
+      transform: scale(1.1);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    }
+
+    /* Indicador de sesión */
+    #sesionInfo {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #28a745;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      z-index: 1005;
+      font-size: 14px;
+      display: none;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
 
     /* MAPA */
     .map-box {
@@ -81,7 +125,7 @@
       box-shadow:0 6px 18px rgba(0,0,0,0.12);
     }
 
-    /* BOTÓN */
+    /* BOTÓN AGREGAR QUEJA */
     #btnAgregarQueja {
       position:fixed;
       bottom:20px;
@@ -117,16 +161,26 @@
       background:#fff;
       padding:20px;
       border-radius:10px;
-      width:360px;
+      width:400px;
       box-shadow:0 6px 18px rgba(0,0,0,.3);
       z-index:1003
     }
 
     #formContainer h3 { margin-top:0 }
     #formContainer label { font-weight:700; display:block; margin-top:10px }
-    #formContainer input, #formContainer textarea, #formContainer select {
+    #formContainer select, #formContainer textarea, #formContainer input {
       width:100%; padding:8px; margin-top:6px;
-      border:1px solid #ccc; border-radius:6px
+      border:1px solid #ccc; border-radius:6px;
+      font-size:14px;
+    }
+
+    #otroProblemaContainer {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      border-left: 4px solid #7c002a;
     }
 
     #closeForm {
@@ -360,37 +414,66 @@
       background: #218838;
     }
 
-    /* Botón de login */
-    #btnLogin {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 10px 15px;
-      background: #6a0a24;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      z-index: 1005;
-      font-size: 14px;
+    /* Sección Misión y Visión */
+    .mision-vision {
+      margin-top:25px;
+      display:flex;
+      align-items:flex-start;
+      gap:30px;
     }
 
-    #btnLogin:hover {
-      background: #7c002a;
+    .logo {
+      text-align:center;
+      width:200px;
     }
 
-    /* Indicador de sesión */
-    #sesionInfo {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #28a745;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 5px;
-      z-index: 1005;
-      font-size: 14px;
-      display: none;
+    .logo img {
+      width:130px;
+    }
+
+    .tabs-container {
+      flex:1;
+    }
+
+    .tabs {
+      display:flex;
+      margin-bottom:15px;
+      border-bottom:2px solid #ddd;
+    }
+
+    .tab {
+      flex:1;
+      text-align:center;
+      padding:10px;
+      cursor:pointer;
+      font-weight:bold;
+      border-radius:8px 8px 0 0;
+    }
+
+    .tab.active {
+      background:#6a0a24;
+      color:white;
+    }
+
+    .tab-content {
+      display:none;
+      line-height:1.6;
+      color:#333;
+    }
+
+    .tab-content.active {
+      display:block;
+    }
+
+    /* Botón cerrar secciones */
+    .cerrar-seccion {
+      position:absolute;
+      top:10px;
+      right:15px;
+      cursor:pointer;
+      font-size:22px;
+      font-weight:bold;
+      color:#7c002a;
     }
 
     @media (max-width:700px){
@@ -422,7 +505,22 @@
         top: 10px;
         right: 10px;
         font-size: 12px;
-        padding: 8px 12px;
+      }
+      #btnLogin {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+      }
+      #formContainer {
+        width: 90%;
+        max-width: 350px;
+      }
+      .mision-vision {
+        flex-direction: column;
+        gap: 15px;
+      }
+      .logo {
+        width: 100%;
       }
     }
   </style>
@@ -432,8 +530,10 @@
 <h1>Centro de atención CESPT</h1>
 <h2>Atención ciudadana: Quejas, ayudas y reportes</h2>
 
-<!-- Botón de login/sesión -->
-<button id="btnLogin">Acceso Administradores</button>
+<!-- Botón de login/sesión como círculo con icono -->
+<button id="btnLogin" title="Acceso Administradores">
+  <i class="fas fa-user"></i>
+</button>
 <div id="sesionInfo"></div>
 
 <nav class="menu-superior">
@@ -446,6 +546,7 @@
      SECCIÓN ACTUALIZACIONES
 =========================== -->
 <section id="actualizaciones" class="seccion oculto">
+  <span class="cerrar-seccion" id="cerrarActualizaciones">&times;</span>
   <h2 style="margin-top:0">Actualizaciones de Reportes</h2>
 
   <!-- BUSCADOR ACTUALIZACIONES -->
@@ -463,6 +564,7 @@
      SECCIÓN REPORTES (LISTA)
 =========================== -->
 <section id="reportes" class="seccion oculto">
+  <span class="cerrar-seccion" id="cerrarReportes">&times;</span>
   <h2>Reportes atendidos</h2>
 
   <!-- BUSCADOR REPORTES -->
@@ -485,6 +587,7 @@
      SECCIÓN AYUDA
 =========================== -->
 <section id="ayuda" class="seccion oculto">
+  <span class="cerrar-seccion" id="cerrarAyuda">&times;</span>
   <h2>Ayuda y contacto</h2>
 
   <p>Si necesitas asistencia inmediata, puedes comunicarte a:</p>
@@ -510,6 +613,42 @@
   <div id="map"></div>
 </div>
 
+<!-- Sección Misión y Visión -->
+<div class="seccion mision-vision">
+  <!-- Columna izquierda (Logo + Título) -->
+  <div class="logo">
+    <img src="https://i.postimg.cc/MZNxy32H/AGUAA.png" alt="Logo CESPT">
+    <h2 style="color:#7c002a; margin-top:10px;">Centro de atención</h2>
+  </div>
+
+  <!-- Columna derecha (Tabs y contenido) -->
+  <div class="tabs-container">
+    <!-- Tabs -->
+    <div class="tabs">
+      <div id="tabMision" class="tab active">Misión</div>
+      <div id="tabVision" class="tab">Visión</div>
+    </div>
+
+    <!-- Contenidos -->
+    <div id="mision" class="tab-content active">
+      Nuestra misión es facilitar a los habitantes de Tijuana un sistema ágil,
+       transparente y fácil de usar para reportar fugas de agua,
+        postes caídos, fallas en el alumbrado y otras incidencias urbanas.
+         Trabajamos para canalizar cada reporte a las dependencias correspondientes,
+          monitorear su atención y brindar información clara al ciudadano,
+           contribuyendo así a una ciudad más ordenada, funcional y segura.
+    </div>
+
+    <div id="vision" class="tab-content">
+      Ser la plataforma líder en Tijuana para el reporte y atención de incidencias urbanas,
+       promoviendo una ciudad más segura,
+        eficiente y sustentable mediante tecnología accesible y una participación ciudadana activa.
+         Aspiramos a convertirnos en el puente confiable entre la comunidad y las autoridades,
+          impulsando soluciones rápidas que mejoren la calidad de vida de todos los tijuanenses.
+    </div>
+  </div>
+</div>
+
 <button id="btnAgregarQueja">Agregar Queja</button>
 <div id="overlay"></div>
 <div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
@@ -517,13 +656,34 @@
 <!-- Formulario para agregar queja -->
 <div id="formContainer">
   <span id="closeForm">&times;</span>
-  <h3>Nueva Queja</h3>
+  <h3>Nuevo Reporte</h3>
   <form id="formQueja">
-    <label>Problema:</label>
-    <input type="text" id="problema" placeholder="Ej. Fuga de agua" required>
-    <label>Descripción:</label>
-    <textarea id="descripcion" rows="3" placeholder="Describe el problema..." required></textarea>
-    <button type="submit">Enviar Queja</button>
+    <label>Tipo de problema:</label>
+    <select id="tipoProblema" required>
+      <option value="">-- Selecciona un problema --</option>
+      <option value="Fuga de agua">💧 Fuga de agua en tubería</option>
+      <option value="Falta de agua">🚰 Falta de suministro de agua</option>
+      <option value="Agua turbia">🌊 Agua turbia o con sedimentos</option>
+      <option value="Baja presión">📉 Baja presión de agua</option>
+      <option value="Drenaje tapado">🚽 Drenaje tapado o colapsado</option>
+      <option value="Fuga en alcantarilla">🕳️ Fuga en alcantarilla</option>
+      <option value="Contaminación">⚠️ Contaminación en fuente de agua</option>
+      <option value="Medidor dañado">🔧 Medidor de agua dañado</option>
+      <option value="Fuga en toma domiciliaria">🏠 Fuga en toma domiciliaria</option>
+      <option value="Inundación">🌧️ Inundación por drenaje</option>
+      <option value="otro">❓ Otro tipo de problema</option>
+    </select>
+    
+    <!-- Campo para "Otro problema" -->
+    <div id="otroProblemaContainer">
+      <label>Especifica el problema:</label>
+      <input type="text" id="otroProblema" placeholder="Describe el problema específico">
+    </div>
+    
+    <label>Descripción adicional:</label>
+    <textarea id="descripcion" rows="3" placeholder="Describe con más detalle el problema (opcional)"></textarea>
+    
+    <button type="submit">Enviar Reporte</button>
   </form>
 </div>
 
@@ -534,7 +694,13 @@
   <form id="formActualizacion">
     <input type="hidden" id="reporteIdActualizacion">
     <label>Descripción del avance:</label>
-    <p><textarea id="descripcionActualizacion" rows="4" placeholder="Describe el avance del reporte..." required></textarea></p>
+    <textarea id="descripcionActualizacion" rows="4" placeholder="Describe el avance del reporte..." required></textarea>
+    <label>Estado:</label>
+    <select id="estadoActualizacion" required>
+      <option value="pendiente">Pendiente</option>
+      <option value="aprobado">Aprobado</option>
+      <option value="resuelto">Resuelto</option>
+    </select>
     <label>Técnico asignado:</label>
     <input type="text" id="tecnicoActualizacion" placeholder="Nombre del técnico">
     <button type="submit" style="margin-top:15px;">Guardar Actualización</button>
@@ -604,7 +770,7 @@ let mapa = null;
 let marcadores = {};
 
 const usuariosAutorizados = {
-  "Ramon": "Trebol",
+  "Ramon": "trebol",
   "Nicole": "jeje",
   "tecnico2": "tecnico456"
 };
@@ -692,6 +858,24 @@ document.getElementById("modal").addEventListener("click", function(e) {
   }
 });
 
+/* ---------- FUNCIONALIDAD PARA "OTRO PROBLEMA" ---------- */
+function inicializarCampoOtroProblema() {
+  const tipoProblemaSelect = document.getElementById('tipoProblema');
+  const otroProblemaContainer = document.getElementById('otroProblemaContainer');
+  const otroProblemaInput = document.getElementById('otroProblema');
+  
+  tipoProblemaSelect.addEventListener('change', function() {
+    if (this.value === 'otro') {
+      otroProblemaContainer.style.display = 'block';
+      otroProblemaInput.required = true;
+    } else {
+      otroProblemaContainer.style.display = 'none';
+      otroProblemaInput.required = false;
+      otroProblemaInput.value = '';
+    }
+  });
+}
+
 /* ---------- SISTEMA DE AUTENTICACIÓN ---------- */
 
 function iniciarSesion(usuario, password) {
@@ -713,7 +897,7 @@ function cerrarSesion() {
 
 function verificarSesionGuardada() {
   const usuarioGuardado = localStorage.getItem('cespt_usuario');
-  if (usuarioGuardado && usuariosAutorizados[usuarioGuardado]) {
+  if (usuariosAutorizados[usuarioGuardado]) {
     usuarioAutenticado = true;
     actualizarInterfazAutenticacion();
   }
@@ -901,7 +1085,11 @@ function mostrarActualizacionesEnLista(reportes, contenedor) {
             </div>
             <div class="actualizacion-meta">
               <span>${new Date(actualizacion.fecha).toLocaleString('es-MX')}</span>
-             
+              ${actualizacion.estado ? `
+                <span class="badge-estado estado-${actualizacion.estado}">
+                  ${actualizacion.estado}
+                </span>
+              ` : ''}
               ${actualizacion.tecnico ? `<span>Técnico: ${actualizacion.tecnico}</span>` : ''}
               ${actualizacion.usuario ? `<span>Por: ${actualizacion.usuario}</span>` : ''}
             </div>
@@ -1164,7 +1352,7 @@ function mostrarMensajeSinResultados(seccion, cantidadVisibles) {
   
   // Agregar contador de resultados
   const contador = document.createElement('div');
-  contador.className = 'contador-resultados';
+  contedor.className = 'contador-resultados';
   contador.textContent = `${cantidadVisibles} ${tipo} encontrados`;
   if (contenedor.firstChild) {
     contenedor.insertBefore(contador, contenedor.firstChild);
@@ -1420,8 +1608,8 @@ function initMap(){
     });
   }).catch(err => console.error(err));
 
-  /* ---------- CARGAR LISTA DE REPORTES (solo 'aprobado') ---------- */
-  function cargarListaReportes() {
+  /* ---------- CARGAR LISTA DE REPORTES ---------- */
+  window.cargarListaReportes = function() {
     const listaContainer = document.getElementById('listaReportes');
     db.ref('reportes').once('value').then(snapshot => {
       listaContainer.innerHTML = '';
@@ -1433,9 +1621,16 @@ function initMap(){
       });
 
       if (items.length === 0) {
-        listaContainer.innerHTML = '<div class="sin-resultados"><p style="color:#666;">No hay reportes aprobados actualmente.</p></div>';
+        listaContainer.innerHTML = '<div class="sin-resultados"><p style="color:#666;">No hay reportes actualmente.</p></div>';
         return;
       }
+
+      // Ordenar por fecha más reciente primero
+      items.sort((a, b) => {
+        const fechaA = a.val.fechaCreacion || a.val.timestamp || 0;
+        const fechaB = b.val.fechaCreacion || b.val.timestamp || 0;
+        return fechaB - fechaA;
+      });
 
       // mostrar cada uno
       items.forEach(item => {
@@ -1476,9 +1671,9 @@ function initMap(){
       
     }).catch(err => {
       listaContainer.innerHTML = '<div class="sin-resultados"><p style="color:#666;">Error cargando reportes.</p></div>';
-      console.error(err);
+      console.error('Error cargando reportes:', err);
     });
-  }
+  };
 
   // Cargar lista inicial de reportes
   cargarListaReportes();
@@ -1491,12 +1686,32 @@ function initMap(){
   const btnAgregar = document.getElementById('btnAgregarQueja');
   const mapMessage = document.getElementById('mapMessage');
 
-  btnAgregar.addEventListener('click', () => { overlay.style.display='block'; formContainer.style.display='block'; });
-  closeForm.addEventListener('click', () => { overlay.style.display='none'; formContainer.style.display='none'; });
+  // INICIALIZAR CAMPO "OTRO PROBLEMA"
+  inicializarCampoOtroProblema();
+
+  btnAgregar.addEventListener('click', () => { 
+    overlay.style.display='block'; 
+    formContainer.style.display='block'; 
+  });
+  
+  closeForm.addEventListener('click', () => { 
+    overlay.style.display='none'; 
+    formContainer.style.display='none'; 
+  });
 
   let colocarMarcadorActivo = false;
   formQueja.addEventListener('submit', (e) => {
     e.preventDefault();
+    
+    // Validar que si se seleccionó "otro", se haya especificado el problema
+    const tipoProblema = document.getElementById('tipoProblema').value;
+    const otroProblema = document.getElementById('otroProblema').value;
+    
+    if (tipoProblema === 'otro' && (!otroProblema || otroProblema.trim() === '')) {
+      alert('Por favor, especifica el problema cuando seleccionas "Otro tipo de problema"');
+      return;
+    }
+    
     overlay.style.display='none';
     formContainer.style.display='none';
     mapMessage.style.display='block';
@@ -1509,8 +1724,25 @@ function initMap(){
     mapMessage.style.display='none';
 
     const { lat, lng } = ev.latlng;
-    const problema = document.getElementById('problema').value;
-    const descripcion = document.getElementById('descripcion').value;
+    const tipoProblema = document.getElementById('tipoProblema').value;
+    const otroProblema = document.getElementById('otroProblema').value;
+    const descripcionAdicional = document.getElementById('descripcion').value;
+
+    // Combinar el tipo de problema con la descripción adicional
+    let descripcionCompleta = '';
+    
+    if (tipoProblema === 'otro') {
+      // Usar el texto del campo "otro problema"
+      descripcionCompleta = `Otro problema: ${otroProblema}`;
+    } else {
+      // Usar el texto del select
+      descripcionCompleta = tipoProblema;
+    }
+    
+    // Agregar descripción adicional si existe
+    if (descripcionAdicional) {
+      descripcionCompleta += `: ${descripcionAdicional}`;
+    }
 
     // abrir nueva pestaña primero para evitar bloqueos móviles
     const nuevaPestaña = window.open('', '_blank');
@@ -1527,16 +1759,34 @@ function initMap(){
         newRef.set({
           lat, lng,
           street: fullStreet,
-          description: `${problema}: ${descripcion}`,
+          description: descripcionCompleta,
           status: 'pendiente',
           timestamp: firebase.database.ServerValue.TIMESTAMP,
           fechaCreacion: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-          nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
-          // Recargar lista de reportes después de agregar uno nuevo
+          console.log('Reporte guardado correctamente:', descripcionCompleta);
+          
+          // CERRAR el formulario y resetearlo
+          document.getElementById('overlay').style.display = 'none';
+          document.getElementById('formContainer').style.display = 'none';
+          document.getElementById('formQueja').reset();
+          document.getElementById('otroProblemaContainer').style.display = 'none';
+          
+          // Recargar lista de reportes
           cargarListaReportes();
+          
+          // Agregar marcador al mapa inmediatamente
+          addMarker(lat, lng, newRef.key, fullStreet, descripcionCompleta, {
+            status: 'pendiente',
+            fechaCreacion: Date.now()
+          }, 1);
+          
+          // Redirigir a Google Forms
+          nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
+          
         }).catch(err => {
-          console.error(err);
+          console.error('Error al guardar:', err);
+          alert('Error al guardar el reporte');
           nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
         });
       })
@@ -1545,14 +1795,30 @@ function initMap(){
         newRef.set({
           lat, lng,
           street: "Calle desconocida, Tijuana",
-          description: `${problema}: ${descripcion}`,
+          description: descripcionCompleta,
           status: 'pendiente',
           timestamp: firebase.database.ServerValue.TIMESTAMP,
           fechaCreacion: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+          console.log('Reporte guardado (fallback):', descripcionCompleta);
+          
+          // CERRAR el formulario y resetearlo
+          document.getElementById('overlay').style.display = 'none';
+          document.getElementById('formContainer').style.display = 'none';
+          document.getElementById('formQueja').reset();
+          document.getElementById('otroProblemaContainer').style.display = 'none';
+          
+          // Recargar lista de reportes
+          cargarListaReportes();
+          
+          // Agregar marcador al mapa inmediatamente
+          addMarker(lat, lng, newRef.key, "Calle desconocida, Tijuana", descripcionCompleta, {
+            status: 'pendiente',
+            fechaCreacion: Date.now()
+          }, 1);
+          
+          nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
         });
-        nuevaPestaña.location.href = "https://docs.google.com/forms/d/e/1FAIpQLScrEq6KDExGBKtzYpbWZeuWsUzy2gKC61hTQ3p8L_8DLPChVw/viewform";
-        // Recargar lista de reportes después de agregar uno nuevo
-        cargarListaReportes();
       });
   });
 
@@ -1566,6 +1832,16 @@ function initMap(){
   });
 
 } // fin initMap
+
+/* ---------- FUNCIONALIDAD MISIÓN Y VISIÓN ---------- */
+function mostrarMV(tipo){
+  document.getElementById("mision").classList.toggle("active", tipo === "mision");
+  document.getElementById("vision").classList.toggle("active", tipo === "vision");
+
+  // Color de pestañas
+  document.getElementById("tabMision").classList.toggle("active", tipo === "mision");
+  document.getElementById("tabVision").classList.toggle("active", tipo === "vision");
+}
 
 /* ---------- Event listeners para el menú ---------- */
 document.getElementById("btnActualizaciones").addEventListener("click", (e) => {
@@ -1583,10 +1859,36 @@ document.getElementById("btnAyuda").addEventListener("click", (e) => {
   toggleSeccion('ayuda');
 });
 
+// Event listeners para cerrar secciones
+document.getElementById("cerrarActualizaciones").addEventListener("click", () => {
+  document.getElementById("actualizaciones").style.display = "none";
+  document.getElementById("btnActualizaciones").classList.remove("activo");
+  seccionActual = null;
+});
+
+document.getElementById("cerrarReportes").addEventListener("click", () => {
+  document.getElementById("reportes").style.display = "none";
+  document.getElementById("btnReportes").classList.remove("activo");
+  seccionActual = null;
+});
+
+document.getElementById("cerrarAyuda").addEventListener("click", () => {
+  document.getElementById("ayuda").style.display = "none";
+  document.getElementById("btnAyuda").classList.remove("activo");
+  seccionActual = null;
+});
+
+// Event listeners para Misión y Visión
+document.getElementById("tabMision").addEventListener("click", () => mostrarMV("mision"));
+document.getElementById("tabVision").addEventListener("click", () => mostrarMV("vision"));
+
 // INICIALIZAR SISTEMA DE AUTENTICACIÓN AL CARGAR
 document.addEventListener('DOMContentLoaded', function() {
   verificarSesionGuardada();
   actualizarInterfazAutenticacion();
+  
+  // Inicializar campo "otro problema"
+  inicializarCampoOtroProblema();
   
   // Inicializar buscadores estáticos si existen
   if (document.getElementById('buscadorActualizaciones')) {
