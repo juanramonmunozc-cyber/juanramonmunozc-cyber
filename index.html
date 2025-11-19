@@ -419,10 +419,6 @@
       font-weight: bold;
     }
 
-    .estado-pendiente { background: #fff3cd; color: #856404; }
-    .estado-proceso { background: #d1ecf1; color: #0c5460; }
-    .estado-resuelto { background: #d4edda; color: #155724; }
-    .estado-aprobado { background: #d4edda; color: #155724; }
 
     .ultima-actualizacion {
       border-left: 4px solid #28a745;
@@ -834,8 +830,8 @@
     <p><textarea id="descripcionActualizacion" rows="4" placeholder="Describe el avance del reporte..." required></textarea></p>
     <label>Estado:</label>
     <select id="estadoActualizacion" required>
-      <option value="aprobado">Aprobado</option>
-      <option value="resuelto">Resuelto</option>
+      <option value="aprobado">aprobado</option>
+      <option value="resuelto">resuelto</option>
     </select>
     <p><label>Técnico asignado:</label></p>
     <p><input type="text" id="tecnicoActualizacion" placeholder="Nombre del técnico"><p></p>
@@ -862,7 +858,9 @@
     <a class="back" id="backToMap" href="#" style="display: inline-flex; align-items: center; text-decoration: none; color: #7c002a; font-weight: bold; margin-right: 20px;">
       <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Volver al mapa
     </a>
-    <h1 style="margin: 0; color: #7c002a;">Detalle del Reporte</h1>
+    <h1 style="margin: 0; color: #7c002a; text-align: center; flex: 1; padding: 0 20px;">
+    Detalle del Reporte
+  </h1>
   </div>
 
   <div id="detailContent" style="background: #f9f9f9; padding: 20px; border-radius: 10px; border: 1px solid #ddd;">
@@ -917,12 +915,7 @@
       </div>
     </div>
 
-    <!-- Botón para agregar actualización (solo para administradores) -->
-    <div style="text-align: center; margin-top: 20px;">
-      <button id="btnAgregarActualizacionDetalle" class="btn-agregar-actualizacion" style="display:none;">
-        <i class="fas fa-plus-circle" style="margin-right: 8px;"></i>Agregar Actualización
-      </button>
-    </div>
+    
   </div>
 </div>
 
@@ -1767,7 +1760,7 @@ if (detailId) {
 }
 
 /* ---------- FUNCIÓN mostrarDetalle(id) MEJORADA ---------- */
-function mostrarDetalle(id){
+function mostrarDetalle(id) {
   const ref = db.ref('reportes/' + id);
   ref.once('value').then(snap => {
     const data = snap.val();
