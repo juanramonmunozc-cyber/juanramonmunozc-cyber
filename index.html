@@ -204,7 +204,7 @@
       font-weight:700;
     }
 
-    /* DETALLE REPORTE */
+    /* DETALLE REPORTE - MEJORADO */
     #detail {
       display:none;
       max-width:900px;
@@ -215,8 +215,40 @@
       border:2px solid #7c002a;
     }
 
-    #detail h1 { font-size:28px; margin-bottom:6px; color:#222; }
-    #detail a.back { display:inline-block; margin-bottom:12px; color:#4b4bd6; text-decoration:underline; }
+    /* Estilos adicionales para la vista de detalle */
+    .estado-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      text-transform: capitalize;
+    }
+    
+    .estado-pendiente {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .estado-aprobado {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+    
+    .estado-resuelto {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .detail-field {
+      margin-bottom: 10px;
+    }
+    
+    .thumb:hover {
+      border-color: #7c002a;
+      transform: scale(1.05);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
 
     /* Estilos para las miniaturas de fotos */
     .thumb {
@@ -228,11 +260,6 @@
       border: 2px solid #ddd;
       border-radius: 8px;
       transition: all 0.3s ease;
-    }
-    .thumb:hover {
-      border-color: #7c002a;
-      transform: scale(1.05);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
 
     /* Modal para ver foto en grande */
@@ -526,6 +553,9 @@
       .logo {
         width: 100%;
       }
+      #detailContent {
+        padding: 15px;
+      }
     }
       .footer-gob {
         background: #3d3c3c;
@@ -664,10 +694,10 @@
         right: 50%;
         transform: translateX(-50%);
       }
+      
   </style>
 </head>
 <body>
-
 <h1>Centro de atención CESPT</h1>
 <h2>Atención ciudadana: Quejas, ayudas y reportes</h2>
 
@@ -755,6 +785,153 @@
 </div>
 
 <!-- Sección Misión y Visión -->
+
+<button id="btnAgregarQueja">Agregar Queja</button>
+<div id="overlay"></div>
+<div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
+
+<!-- Formulario para agregar queja -->
+<div id="formContainer">
+  <span id="closeForm">&times;</span>
+  <h3>Nuevo Reporte</h3>
+  <form id="formQueja">
+    <label>Tipo de problema:</label>
+    <select id="tipoProblema" required>
+      <option value="">-- Selecciona un problema --</option>
+      <option value="Fuga de agua">💧 Fuga de agua en tubería</option>
+      <option value="Falta de agua">🚰 Falta de suministro de agua</option>
+      <option value="Agua turbia">🌊 Agua turbia o con sedimentos</option>
+      <option value="Baja presión">📉 Baja presión de agua</option>
+      <option value="Drenaje tapado">🚽 Drenaje tapado o colapsado</option>
+      <option value="Fuga en alcantarilla">🕳️ Fuga en alcantarilla</option>
+      <option value="Contaminación">⚠️ Contaminación en fuente de agua</option>
+      <option value="Medidor dañado">🔧 Medidor de agua dañado</option>
+      <option value="Fuga en toma domiciliaria">🏠 Fuga en toma domiciliaria</option>
+      <option value="Inundación">🌧️ Inundación por drenaje</option>
+      <option value="otro">❓ Otro tipo de problema</option>
+    </select>
+    
+    <!-- Campo para "Otro problema" -->
+    <div id="otroProblemaContainer">
+      <label>Especifica el problema:</label>
+      <input type="text" id="otroProblema" placeholder="Describe el problema específico">
+    </div>
+    
+    <label>Descripción adicional:</label>
+    <textarea id="descripcion" rows="3" placeholder="Describe con más detalle el problema (opcional)"></textarea>
+    
+    <button type="submit">Enviar Reporte</button>
+  </form>
+</div>
+
+<!-- Formulario para agregar actualización -->
+<div id="formActualizacionContainer" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; width:360px; box-shadow:0 6px 18px rgba(0,0,0,.3); z-index:1003">
+  <span id="closeFormActualizacion" style="position:absolute; top:8px; right:12px; cursor:pointer; font-weight:700; font-size:20px; color:#333;">&times;</span>
+  <h3>Agregar Actualización</h3>
+  <form id="formActualizacion">
+    <input type="hidden" id="reporteIdActualizacion">
+    <label>Descripción del avance:</label>
+    <p><textarea id="descripcionActualizacion" rows="4" placeholder="Describe el avance del reporte..." required></textarea></p>
+    <label>Estado:</label>
+    <select id="estadoActualizacion" required>
+      <option value="aprobado">Aprobado</option>
+      <option value="resuelto">Resuelto</option>
+    </select>
+    <p><label>Técnico asignado:</label></p>
+    <p><input type="text" id="tecnicoActualizacion" placeholder="Nombre del técnico"><p></p>
+    <button type="submit" style="margin-top:15px;">Guardar Actualización</button>
+  </form>
+</div>
+
+<!-- Formulario de login -->
+<div id="formLoginContainer" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; width:300px; box-shadow:0 6px 18px rgba(0,0,0,.3); z-index:1003">
+  <span id="closeFormLogin" style="position:absolute; top:8px; right:12px; cursor:pointer; font-weight:700; font-size:20px; color:#333;">&times;</span>
+  <h3>Acceso Administradores</h3>
+  <form id="formLogin">
+    <label>Usuario:</label>
+    <input type="text" id="usuarioLogin" placeholder="Usuario" required>
+    <label>Contraseña:</label>
+    <input type="password" id="passwordLogin" placeholder="Contraseña" required>
+    <button type="submit" style="margin-top:15px;">Iniciar Sesión</button>
+  </form>
+</div>
+
+<!-- VISTA DETALLE MEJORADA (se muestra cuando hay ?id=...) -->
+<div id="detail">
+  <div style="display: flex; align-items: center; margin-bottom: 20px;">
+    <a class="back" id="backToMap" href="#" style="display: inline-flex; align-items: center; text-decoration: none; color: #7c002a; font-weight: bold; margin-right: 20px;">
+      <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Volver al mapa
+    </a>
+    <h1 style="margin: 0; color: #7c002a;">Detalle del Reporte</h1>
+  </div>
+
+  <div id="detailContent" style="background: #f9f9f9; padding: 20px; border-radius: 10px; border: 1px solid #ddd;">
+    <!-- Información básica del reporte -->
+    <div style="margin-bottom: 25px;">
+      <h2 id="detailStreet" style="margin-top: 0; color: #333; border-bottom: 2px solid #7c002a; padding-bottom: 10px;">Calle ...</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div class="detail-field">
+          <strong>Estado:</strong> 
+          <span id="detailEstado" class="estado-badge estado-pendiente">Cargando...</span>
+        </div>
+        <div class="detail-field">
+          <strong>Días transcurridos:</strong> 
+          <span id="detailDias">0 días</span>
+        </div>
+        <div class="detail-field">
+          <strong>Fecha de reporte:</strong> 
+          <span id="detailFecha">--</span>
+        </div>
+      </div>
+      
+      <div class="detail-field" style="margin-bottom: 15px;">
+        <strong>Descripción:</strong> 
+        <div id="detailDescription" style="background: white; padding: 12px; border-radius: 6px; margin-top: 5px; border-left: 4px solid #7c002a;">
+          Cargando descripción...
+        </div>
+      </div>
+    </div>
+
+    <!-- Galería de fotos -->
+    <div style="margin-bottom: 25px;">
+      <h3 style="color: #7c002a; margin-bottom: 15px;">
+        <i class="fas fa-camera" style="margin-right: 8px;"></i>Fotos del Reporte
+      </h3>
+      <div id="detailPhotos" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start;">
+        <div style="color:#666; padding: 20px; text-align: center; width: 100%;">
+          Cargando fotos...
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial de actualizaciones -->
+    <div style="margin-bottom: 25px;">
+      <h3 style="color: #7c002a; margin-bottom: 15px;">
+        <i class="fas fa-history" style="margin-right: 8px;"></i>Historial de Actualizaciones
+      </h3>
+      <div id="detailActualizaciones" style="max-height: 300px; overflow-y: auto; padding-right: 10px;">
+        <div style="color:#666; padding: 20px; text-align: center;">
+          Cargando actualizaciones...
+        </div>
+      </div>
+    </div>
+
+    <!-- Botón para agregar actualización (solo para administradores) -->
+    <div style="text-align: center; margin-top: 20px;">
+      <button id="btnAgregarActualizacionDetalle" class="btn-agregar-actualizacion" style="display:none;">
+        <i class="fas fa-plus-circle" style="margin-right: 8px;"></i>Agregar Actualización
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para ver fotos en grande -->
+<div id="modal">
+  <button id="closeModal">&times;</button>
+  <img id="modalImg" src="" alt="Foto del reporte">
+</div>
+
 <div class="seccion mision-vision">
   <!-- Columna izquierda (Logo + Título) -->
   <div class="logo">
@@ -874,100 +1051,6 @@ padding:30px; border-radius:10px; border:2px solid #ddd;">
 
   </div>
 </section>
-
-<button id="btnAgregarQueja">Agregar Queja</button>
-<div id="overlay"></div>
-<div id="mapMessage">Haz clic en el mapa para colocar tu queja</div>
-
-<!-- Formulario para agregar queja -->
-<div id="formContainer">
-  <span id="closeForm">&times;</span>
-  <h3>Nuevo Reporte</h3>
-  <form id="formQueja">
-    <label>Tipo de problema:</label>
-    <select id="tipoProblema" required>
-      <option value="">-- Selecciona un problema --</option>
-      <option value="Fuga de agua">💧 Fuga de agua en tubería</option>
-      <option value="Falta de agua">🚰 Falta de suministro de agua</option>
-      <option value="Agua turbia">🌊 Agua turbia o con sedimentos</option>
-      <option value="Baja presión">📉 Baja presión de agua</option>
-      <option value="Drenaje tapado">🚽 Drenaje tapado o colapsado</option>
-      <option value="Fuga en alcantarilla">🕳️ Fuga en alcantarilla</option>
-      <option value="Contaminación">⚠️ Contaminación en fuente de agua</option>
-      <option value="Medidor dañado">🔧 Medidor de agua dañado</option>
-      <option value="Fuga en toma domiciliaria">🏠 Fuga en toma domiciliaria</option>
-      <option value="Inundación">🌧️ Inundación por drenaje</option>
-      <option value="otro">❓ Otro tipo de problema</option>
-    </select>
-    
-    <!-- Campo para "Otro problema" -->
-    <div id="otroProblemaContainer">
-      <label>Especifica el problema:</label>
-      <input type="text" id="otroProblema" placeholder="Describe el problema específico">
-    </div>
-    
-    <label>Descripción adicional:</label>
-    <textarea id="descripcion" rows="3" placeholder="Describe con más detalle el problema (opcional)"></textarea>
-    
-    <button type="submit">Enviar Reporte</button>
-  </form>
-</div>
-
-<!-- Formulario para agregar actualización -->
-<div id="formActualizacionContainer" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; width:360px; box-shadow:0 6px 18px rgba(0,0,0,.3); z-index:1003">
-  <span id="closeFormActualizacion" style="position:absolute; top:8px; right:12px; cursor:pointer; font-weight:700; font-size:20px; color:#333;">&times;</span>
-  <h3>Agregar Actualización</h3>
-  <form id="formActualizacion">
-    <input type="hidden" id="reporteIdActualizacion">
-    <label>Descripción del avance:</label>
-    <p><textarea id="descripcionActualizacion" rows="4" placeholder="Describe el avance del reporte..." required></textarea></p>
-    <label>Estado:</label>
-    <select id="estadoActualizacion" required>
-      <option value="aprobado">Aprobado</option>
-      <option value="resuelto">Resuelto</option>
-    </select>
-    <p><label>Técnico asignado:</label></p>
-    <p><input type="text" id="tecnicoActualizacion" placeholder="Nombre del técnico"><p></p>
-    <button type="submit" style="margin-top:15px;">Guardar Actualización</button>
-  </form>
-</div>
-
-<!-- Formulario de login -->
-<div id="formLoginContainer" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; width:300px; box-shadow:0 6px 18px rgba(0,0,0,.3); z-index:1003">
-  <span id="closeFormLogin" style="position:absolute; top:8px; right:12px; cursor:pointer; font-weight:700; font-size:20px; color:#333;">&times;</span>
-  <h3>Acceso Administradores</h3>
-  <form id="formLogin">
-    <label>Usuario:</label>
-    <input type="text" id="usuarioLogin" placeholder="Usuario" required>
-    <label>Contraseña:</label>
-    <input type="password" id="passwordLogin" placeholder="Contraseña" required>
-    <button type="submit" style="margin-top:15px;">Iniciar Sesión</button>
-  </form>
-</div>
-
-<!-- VISTA DETALLE (se muestra cuando hay ?id=...) -->
-<div id="detail">
-  <h1>Detalle del Reporte</h1>
-  <a class="back" id="backToMap" href="#">Volver al mapa</a>
-
-  <div id="detailContent">
-    <h2 id="detailStreet">Calle ...</h2>
-    <div class="field"><strong>Descripción:</strong> <span id="detailDescription"></span></div>
-    <div class="field"><strong>Días transcurridos:</strong> <span id="detailDias">0</span> días</div>
-    <div class="field"><strong>Estado:</strong> <span id="detailEstado"></span></div>
-    <div class="field"><strong>Fotos:</strong></div>
-    <div id="detailPhotos"></div>
-    <div class="field" style="margin-top:20px;">
-      <button id="btnAgregarActualizacionDetalle" class="btn-agregar-actualizacion" style="display:none;">Agregar Actualización</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal para ver fotos en grande -->
-<div id="modal">
-  <button id="closeModal">&times;</button>
-  <img id="modalImg" src="" alt="Foto del reporte">
-</div>
 
 <!-- Scripts -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -1600,7 +1683,7 @@ function mostrarMensajeSinResultados(seccion, cantidadVisibles) {
   
   // Agregar contador de resultados
   const contador = document.createElement('div');
-  contedor.className = 'contador-resultados';
+  contador.className = 'contador-resultados';
   contador.textContent = `${cantidadVisibles} ${tipo} encontrados`;
   if (contenedor.firstChild) {
     contenedor.insertBefore(contador, contenedor.firstChild);
@@ -1683,63 +1766,135 @@ if (detailId) {
   initMap();
 }
 
-/* ---------- FUNCIÓN mostrarDetalle(id) ---------- */
+/* ---------- FUNCIÓN mostrarDetalle(id) MEJORADA ---------- */
 function mostrarDetalle(id){
   const ref = db.ref('reportes/' + id);
   ref.once('value').then(snap => {
     const data = snap.val();
     if (!data) {
-      document.getElementById('detailContent').innerHTML = '<p>Reporte no encontrado.</p>';
+      document.getElementById('detailContent').innerHTML = 
+        '<div style="text-align: center; padding: 40px; color: #666;">' +
+        '<i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 15px;"></i>' +
+        '<h3>Reporte no encontrado</h3>' +
+        '<p>El reporte solicitado no existe o ha sido eliminado.</p>' +
+        '</div>';
       return;
     }
     
     const street = data.street || 'Calle desconocida, Tijuana';
-    const description = data.description || '';
-    const estado = data.status || '';
+    const description = data.description || 'No hay descripción disponible.';
+    const estado = data.status || 'pendiente';
     
     // CÁLCULO DE DÍAS MEJORADO
-    const fechaCreacionMs = data.fechaCreacion ? (data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion) : Date.now();
+    const fechaCreacionMs = data.fechaCreacion ? 
+      (data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion) : 
+      Date.now();
     const diasPasados = calcularDiasUTC(fechaCreacionMs);
+    
+    // Formatear fecha de creación
+    const fechaCreacion = new Date(fechaCreacionMs);
+    const fechaFormateada = fechaCreacion.toLocaleDateString('es-MX', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
 
+    // Actualizar la información básica
     document.getElementById('detailStreet').textContent = street;
     document.getElementById('detailDescription').textContent = description;
     document.getElementById('detailDias').textContent = `${diasPasados} días`;
-    document.getElementById('detailEstado').textContent = estado;
-
+    document.getElementById('detailFecha').textContent = fechaFormateada;
+    
+    // Actualizar estado con el badge correspondiente
+    const estadoElement = document.getElementById('detailEstado');
+    estadoElement.textContent = estado;
+    estadoElement.className = 'estado-badge estado-' + estado;
+    
+    // Cargar fotos
     const photosContainer = document.getElementById('detailPhotos');
     photosContainer.innerHTML = '';
-
-    // AGREGAR FOTOS CON SISTEMA DE MODAL
+    
     if (data.foto) {
       if (Array.isArray(data.foto)) {
         // Múltiples fotos
         data.foto.forEach(f => {
+          const imgContainer = document.createElement('div');
+          imgContainer.style.position = 'relative';
+          imgContainer.style.cursor = 'pointer';
+          
           const img = document.createElement('img');
           img.src = `Fotos/${f}`;
           img.className = 'thumb';
           img.onclick = () => mostrarImagen(`Fotos/${f}`);
-          photosContainer.appendChild(img);
+          img.style.width = '120px';
+          img.style.height = '120px';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '8px';
+          img.style.border = '2px solid #ddd';
+          img.style.transition = 'all 0.3s ease';
+          
+          imgContainer.appendChild(img);
+          photosContainer.appendChild(imgContainer);
         });
       } else {
         // Una sola foto
+        const imgContainer = document.createElement('div');
+        imgContainer.style.position = 'relative';
+        imgContainer.style.cursor = 'pointer';
+        
         const img = document.createElement('img');
         img.src = `Fotos/${data.foto}`;
         img.className = 'thumb';
         img.onclick = () => mostrarImagen(`Fotos/${data.foto}`);
-        photosContainer.appendChild(img);
+        img.style.width = '120px';
+        img.style.height = '120px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '8px';
+        img.style.border = '2px solid #ddd';
+        img.style.transition = 'all 0.3s ease';
+        
+        imgContainer.appendChild(img);
+        photosContainer.appendChild(imgContainer);
       }
     } else if (data.photo) {
       // Compatibilidad con campo "photo"
+      const imgContainer = document.createElement('div');
+      imgContainer.style.position = 'relative';
+      imgContainer.style.cursor = 'pointer';
+      
       const img = document.createElement('img');
       img.src = data.photo;
       img.className = 'thumb';
       img.onclick = () => mostrarImagen(data.photo);
-      photosContainer.appendChild(img);
+      img.style.width = '120px';
+      img.style.height = '120px';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '8px';
+      img.style.border = '2px solid #ddd';
+      img.style.transition = 'all 0.3s ease';
+      
+      imgContainer.appendChild(img);
+      photosContainer.appendChild(imgContainer);
     } else {
-      photosContainer.innerHTML = '<div style="color:#666">No hay fotos disponibles para este reporte</div>';
+      photosContainer.innerHTML = 
+        '<div style="color:#666; padding: 20px; text-align: center; width: 100%;">' +
+        '<i class="fas fa-image" style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;"></i>' +
+        '<p>No hay fotos disponibles para este reporte</p>' +
+        '</div>';
     }
+    
+    // Cargar historial de actualizaciones
+    cargarHistorialActualizaciones(id);
+    
   }).catch(err => {
-    document.getElementById('detailContent').innerHTML = '<p>Error cargando el reporte.</p>';
+    document.getElementById('detailContent').innerHTML = 
+      '<div style="text-align: center; padding: 40px; color: #666;">' +
+      '<i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 15px;"></i>' +
+      '<h3>Error al cargar el reporte</h3>' +
+      '<p>Ocurrió un problema al cargar la información del reporte.</p>' +
+      '</div>';
     console.error(err);
   });
 
@@ -1758,10 +1913,95 @@ function mostrarDetalle(id){
   }
 }
 
+/* ---------- FUNCIÓN PARA CARGAR HISTORIAL DE ACTUALIZACIONES ---------- */
+function cargarHistorialActualizaciones(reporteId) {
+  const contenedor = document.getElementById('detailActualizaciones');
+  
+  db.ref('reportes/' + reporteId).once('value').then(snapshot => {
+    const data = snapshot.val();
+    if (!data || !data.actualizaciones) {
+      contenedor.innerHTML = 
+        '<div style="color:#666; padding: 20px; text-align: center;">' +
+        '<i class="fas fa-info-circle" style="margin-right: 8px;"></i>' +
+        'No hay actualizaciones disponibles para este reporte.' +
+        '</div>';
+      return;
+    }
+    
+    const actualizaciones = Object.values(data.actualizaciones);
+    
+    // Ordenar por fecha (más reciente primero)
+    actualizaciones.sort((a, b) => b.fecha - a.fecha);
+    
+    if (actualizaciones.length === 0) {
+      contenedor.innerHTML = 
+        '<div style="color:#666; padding: 20px; text-align: center;">' +
+        '<i class="fas fa-info-circle" style="margin-right: 8px;"></i>' +
+        'No hay actualizaciones disponibles para este reporte.' +
+        '</div>';
+      return;
+    }
+    
+    let html = '';
+    actualizaciones.forEach((act, index) => {
+      const fecha = new Date(act.fecha);
+      const fechaFormateada = fecha.toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      html += `
+        <div class="actualizacion-item ${index === 0 ? 'ultima-actualizacion' : ''}" 
+             style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fafafa;">
+          <div class="actualizacion-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="actualizacion-titulo" style="font-weight: bold; color: #7c002a; font-size: 16px; margin: 0;">
+              Actualización
+            </div>
+            <div class="actualizacion-fecha" style="color: #666; font-size: 12px;">
+              ${fechaFormateada}
+            </div>
+          </div>
+          
+          <div class="actualizacion-descripcion" style="color: #333; margin-bottom: 8px;">
+            ${act.descripcion || 'Sin descripción adicional'}
+          </div>
+          
+          <div class="actualizacion-meta" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #666;">
+            <div>
+              ${act.estado ? `
+                <span class="badge-estado estado-${act.estado}" style="padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                  ${act.estado}
+                </span>
+              ` : ''}
+              ${act.tecnico ? `<span style="margin-left: 10px;">Técnico: ${act.tecnico}</span>` : ''}
+            </div>
+            ${act.usuario ? `<span>Por: ${act.usuario}</span>` : ''}
+          </div>
+        </div>
+      `;
+    });
+    
+    contenedor.innerHTML = html;
+    
+  }).catch(err => {
+    console.error('Error cargando actualizaciones:', err);
+    contenedor.innerHTML = 
+      '<div style="color:#666; padding: 20px; text-align: center;">' +
+      '<i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>' +
+      'Error al cargar las actualizaciones.' +
+      '</div>';
+  });
+}
+
 /* ---------- FUNCIONES MAPA (cuando no hay ?id) ---------- */
 function initMap(){
   mapa = L.map('map');
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(mapa);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(mapa);
 
   fetch("https://nominatim.openstreetmap.org/search?city=Tijuana&format=json")
     .then(r => r.json())
