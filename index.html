@@ -215,6 +215,63 @@
       border:2px solid #7c002a;
     }
 
+    /* SISTEMA DE BADGES DE PRIORIDAD - NUEVO */
+    .badge-prioridad-alta { 
+        background: #dc3545; 
+        color: white; 
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .badge-prioridad-media { 
+        background: #ffc107; 
+        color: black; 
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .badge-prioridad-baja { 
+        background: #28a745; 
+        color: white; 
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Badge de urgencia */
+    .badge-urgencia { 
+        animation: pulse 2s infinite; 
+        background: #ff4136; 
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+
     /* Estilos adicionales para la vista de detalle */
     .estado-badge {
       display: inline-block;
@@ -238,6 +295,11 @@
     .estado-resuelto {
       background: #d4edda;
       color: #155724;
+    }
+
+    .estado-en-proceso {
+      background: #fd7e14;
+      color: white;
     }
     
     .detail-field {
@@ -866,7 +928,10 @@
   <div id="detailContent" style="background: #f9f9f9; padding: 20px; border-radius: 10px; border: 1px solid #ddd;">
     <!-- Información básica del reporte -->
     <div style="margin-bottom: 25px;">
-      <h2 id="detailStreet" style="margin-top: 0; color: #333; border-bottom: 2px solid #7c002a; padding-bottom: 10px;">Calle ...</h2>
+      <h2 id="detailStreet" style="margin-top: 0; color: #333; border-bottom: 2px solid #7c002a; padding-bottom: 10px;">
+        Calle ...
+        <div id="detailBadges" style="margin-top: 10px;"></div>
+      </h2>
       
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
         <div class="detail-field">
@@ -914,8 +979,6 @@
         </div>
       </div>
     </div>
-
-    
   </div>
 </div>
 
@@ -983,7 +1046,7 @@ padding:30px; border-radius:10px; border:2px solid #ddd;">
         • Cierra la llave de paso principal.<br>
         • Evita usar dispositivos eléctricos cerca.<br>
         • Reporta inmediatamente al área correspondiente.<br>
-        • Si el agua es turbia o huele mal, no la utilices.
+        • Si el agua es turbia o huele mal, no la utilises.
       </p>
     </div>
 
@@ -1139,6 +1202,58 @@ function determinarColorYParpadeo(dias, count) {
   }
   
   return { color, parpadeo };
+}
+
+/* ---------- SISTEMA DE PRIORIDADES - NUEVO ---------- */
+function calcularPrioridad(reporte) {
+    const dias = calcularDiasUTC(reporte.fechaCreacion);
+    const tipo = reporte.description || '';
+    
+    // Prioridad por tipo de problema
+    const prioridadesPorTipo = {
+        'Fuga de agua': 3,
+        'Inundación': 3,
+        'Contaminación': 3,
+        'Falta de agua': 2,
+        'Agua turbia': 2,
+        'Baja presión': 1,
+        'Drenaje tapado': 2,
+        'Medidor dañado': 1
+    };
+    
+    let prioridad = 1; // Por defecto baja
+    
+    // Buscar coincidencia en el tipo de problema
+    for (const [key, value] of Object.entries(prioridadesPorTipo)) {
+        if (tipo.includes(key)) {
+            prioridad = value;
+            break;
+        }
+    }
+    
+    // Aumentar prioridad según días transcurridos
+    if (dias > 7) prioridad = Math.min(prioridad + 1, 3);
+    if (dias > 14) prioridad = 3; // Máxima prioridad
+    
+    return prioridad;
+}
+
+function obtenerBadgePrioridad(prioridad) {
+    switch(prioridad) {
+        case 3:
+            return '<span class="badge-prioridad-alta"><i class="fas fa-exclamation-triangle"></i> ALTA</span>';
+        case 2:
+            return '<span class="badge-prioridad-media"><i class="fas fa-exclamation-circle"></i> MEDIA</span>';
+        default:
+            return '<span class="badge-prioridad-baja"><i class="fas fa-info-circle"></i> BAJA</span>';
+    }
+}
+
+function obtenerBadgeUrgencia(dias) {
+    if (dias >= 14) {
+        return '<span class="badge-urgencia"><i class="fas fa-bell"></i> URGENTE</span>';
+    }
+    return '';
 }
 
 // Función para mostrar fotos en modal
@@ -1379,12 +1494,18 @@ function mostrarActualizacionesEnLista(reportes, contenedor) {
     
     const ultimaActualizacion = actualizacionesArray[0];
     const totalActualizaciones = actualizacionesArray.length;
+    const diasPasados = calcularDiasUTC(data.fechaCreacion);
+    const prioridad = calcularPrioridad(data);
     
     html += `
       <div class="actualizacion-item ${ultimaActualizacion ? 'ultima-actualizacion' : ''}">
         <div class="actualizacion-header">
-          <div class="actualizacion-titulo">
-            📍 ${escapeHtml(data.street || 'Ubicación desconocida')}
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="actualizacion-titulo">
+              📍 ${escapeHtml(data.street || 'Ubicación desconocida')}
+            </div>
+            ${obtenerBadgePrioridad(prioridad)}
+            ${obtenerBadgeUrgencia(diasPasados)}
           </div>
           <div class="actualizacion-fecha">
             ${new Date(ultimaActualizacion.fecha).toLocaleDateString('es-MX')}
@@ -1794,8 +1915,19 @@ function mostrarDetalle(id) {
       minute: '2-digit'
     });
 
+    // Calcular prioridad y badges
+    const prioridad = calcularPrioridad(data);
+    const badgePrioridad = obtenerBadgePrioridad(prioridad);
+    const badgeUrgencia = obtenerBadgeUrgencia(diasPasados);
+
     // Actualizar la información básica
-    document.getElementById('detailStreet').textContent = street;
+    document.getElementById('detailStreet').innerHTML = `
+      ${street}
+      <div id="detailBadges" style="margin-top: 10px;">
+        ${badgePrioridad}
+        ${badgeUrgencia}
+      </div>
+    `;
     document.getElementById('detailDescription').textContent = description;
     document.getElementById('detailDias').textContent = `${diasPasados} días`;
     document.getElementById('detailFecha').textContent = fechaFormateada;
@@ -2021,18 +2153,42 @@ function initMap(){
     const streetEsc = escapeHtml(street || 'Calle desconocida, Tijuana');
     const descEsc = escapeHtml(descripcion || '');
 
+    // Calcular prioridad para el popup
+    const prioridad = calcularPrioridad(rawData);
+    const badgePrioridad = obtenerBadgePrioridad(prioridad);
+    const badgeUrgencia = obtenerBadgeUrgencia(diasPasados);
+
     const popupHtml = `
-      <div style="font-weight:700;margin-bottom:6px">Reporte en:</div>
-      <div style="font-weight:700">${streetEsc}</div>
-      <div style="margin-top:8px"><strong>Descripción:</strong> ${descEsc}</div>
-      <div style="margin-top:8px"><strong>Días transcurridos:</strong> ${diasPasados} días</div>
-      <div style="margin-top:8px"><strong>Reportes cercanos:</strong> ${count}</div>
-      <div style="margin-top:8px" class="popup-link"><a href="?id=${key}">Ver más</a></div>
-      ${usuarioAutenticado ? `
-        <div style="margin-top:8px">
-          <button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${key}')">Agregar Actualización</button>
+      <div style="min-width: 280px;">
+        <div style="border-bottom: 2px solid #7c002a; padding-bottom: 8px; margin-bottom: 10px;">
+          <div style="font-weight:700; color: #7c002a;">📍 ${streetEsc}</div>
         </div>
-      ` : ''}
+        
+        <div style="margin-bottom: 8px;">
+          <strong>Tipo:</strong> ${descEsc.split(':')[0] || descEsc}
+        </div>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+          ${badgePrioridad}
+          ${badgeUrgencia}
+          <span class="estado-badge estado-${rawData.status || 'pendiente'}">${rawData.status || 'pendiente'}</span>
+        </div>
+        
+        <div style="margin-bottom: 8px;">
+          <strong><i class="far fa-clock"></i> Días:</strong> ${diasPasados} días
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 10px; display: flex; justify-content: space-between;">
+          <a href="?id=${key}" style="color: #7c002a; font-weight: bold; text-decoration: none;">
+            <i class="fas fa-external-link-alt"></i> Ver detalles
+          </a>
+          ${usuarioAutenticado ? `
+            <button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${key}')" style="padding: 4px 8px; font-size: 12px;">
+              <i class="fas fa-edit"></i> Actualizar
+            </button>
+          ` : ''}
+        </div>
+      </div>
     `;
 
     marker.bindPopup(popupHtml);
@@ -2121,6 +2277,11 @@ function initMap(){
         const fechaCreacionMs = data.fechaCreacion ? (data.fechaCreacion.toMillis ? data.fechaCreacion.toMillis() : data.fechaCreacion) : Date.now();
         const diasPasados = calcularDiasUTC(fechaCreacionMs);
         
+        // Calcular prioridad
+        const prioridad = calcularPrioridad(data);
+        const badgePrioridad = obtenerBadgePrioridad(prioridad);
+        const badgeUrgencia = obtenerBadgeUrgencia(diasPasados);
+        
         const card = document.createElement('div');
         card.className = 'reporte-card';
         
@@ -2133,15 +2294,25 @@ function initMap(){
         }
         
         card.innerHTML = `
-          <h3>${escapeHtml(data.street || 'Ubicación desconocida')}</h3>
-          <div class="fecha">Reportado hace ${diasPasados} días</div>
-          <div class="descripcion">${escapeHtml(data.description || 'Sin descripción')}</div>
-          <span class="estado ${estadoClass}">${data.status || 'pendiente'}</span>
-          <div style="margin-top:10px;">
-            <a href="?id=${item.id}" style="color:#0056b3; text-decoration:underline;">Ver detalles completos</a>
-            ${usuarioAutenticado ? `
-              <button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${item.id}')" style="margin-left:10px;">Agregar Actualización</button>
-            ` : ''}
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <h3 style="margin: 0; color: #7c002a; flex: 1;">${escapeHtml(data.street || 'Ubicación desconocida')}</h3>
+            <div style="text-align: right;">
+              ${badgePrioridad}
+              ${badgeUrgencia}
+            </div>
+          </div>
+          <div class="fecha" style="color: #666; font-size: 14px; margin-bottom: 8px;">
+            <i class="far fa-clock"></i> Reportado hace ${diasPasados} días
+          </div>
+          <div class="descripcion" style="margin-bottom: 10px;">${escapeHtml(data.description || 'Sin descripción')}</div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="estado-badge estado-${data.status || 'pendiente'}">${data.status || 'pendiente'}</span>
+            <div>
+              <a href="?id=${item.id}" style="color:#0056b3; text-decoration:underline; margin-right: 10px;">Ver detalles</a>
+              ${usuarioAutenticado ? `
+                <button class="btn-agregar-actualizacion" onclick="abrirFormularioActualizacion('${item.id}')">Actualizar</button>
+              ` : ''}
+            </div>
           </div>
         `;
         listaContainer.appendChild(card);
@@ -2241,6 +2412,7 @@ function initMap(){
           lat, lng,
           street: fullStreet,
           description: descripcionCompleta,
+          foto:"Suba su foto",
           status: 'pendiente',
           timestamp: firebase.database.ServerValue.TIMESTAMP,
           fechaCreacion: firebase.database.ServerValue.TIMESTAMP
