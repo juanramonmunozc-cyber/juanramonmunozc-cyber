@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CESPT - Iniciar Sesión</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-card">
+            <!-- Logo CESPT -->
+            <div class="logo">
+                <h1>🌊 CESPT</h1>
+                <p>Comisión Estatal de Servicios Públicos de Tijuana</p>
+            </div>
+
+            <!-- Formulario de Login -->
+            <form id="loginForm" class="login-form">
+                <h2>🔐 Identificación</h2>
+                
+                <div class="form-group">
+                    <label for="numero_servicio">📋 Número de Servicio *</label>
+                    <input 
+                        type="text" 
+                        id="numero_servicio" 
+                        name="numero_servicio" 
+                        placeholder="8-10 dígitos"
+                        required
+                        pattern="[0-9]{8,10}"
+                        title="8 a 10 dígitos"
+                    >
+                    <small>Encuéntralo en tu recibo de agua</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="telefono">📞 Teléfono *</label>
+                    <input 
+                        type="tel" 
+                        id="telefono" 
+                        name="telefono" 
+                        placeholder="10 dígitos"
+                        required
+                        pattern="[0-9]{10}"
+                        title="10 dígitos"
+                    >
+                </div>4
+
+                <div class="form-group">
+                    <label for="email">📧 Email (opcional)</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="usuario@ejemplo.com"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="numero_medidor">🔢 Número de Medidor (opcional)</label>
+                    <input 
+                        type="text" 
+                        id="numero_medidor" 
+                        name="numero_medidor" 
+                        placeholder="8 dígitos"
+                        pattern="[0-9]{8}"
+                        title="8 dígitos"
+                    >
+                </div>
+
+                <button type="submit" class="btn-login">
+                    🚀 Ingresar al Sistema
+                </button>
+
+                <div class="info-box">
+                    <h3>📝 Información importante:</h3>
+                    <ul>
+                        <li>Los campos con * son obligatorios</li>
+                        <li>Se generará un folio automáticamente</li>
+                        <li>Puede reportar fugas, falta de agua, etc.</li>
+                    </ul>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
