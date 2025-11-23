@@ -34,7 +34,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     localStorage.setItem('usuarioCespt', JSON.stringify(formData));
     
     // Redirigir al dashboard
-    window.location.href = 'index.html';
+    window.location.href = 'dashboard.html';
 });
 
 // Funciones de validación
@@ -59,7 +59,7 @@ function cargarUsuario() {
     const usuario = JSON.parse(localStorage.getItem('usuarioCespt'));
     
     if (!usuario) {
-        window.location.href = 'Pagina-login.html';
+        window.location.href = 'index.html';
         return;
     }
 
@@ -125,5 +125,5 @@ function crearReporte() {
 
 function cerrarSesion() {
     localStorage.removeItem('usuarioCespt');
-    window.location.href = 'Pagina-login.html';
+    window.location.href = 'index.html';
 }
