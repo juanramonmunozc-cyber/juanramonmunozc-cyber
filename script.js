@@ -34,7 +34,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     localStorage.setItem('usuarioCespt', JSON.stringify(formData));
     
     // Redirigir al dashboard
-    window.location.href = 'index.html';
+    window.location.href = 'dashboard.html';
 });
 
 // Funciones de validación
