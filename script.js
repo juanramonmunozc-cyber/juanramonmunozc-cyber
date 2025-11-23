@@ -125,5 +125,5 @@ function crearReporte() {
 
 function cerrarSesion() {
     localStorage.removeItem('usuarioCespt');
-    window.location.href = 'Pagina-login.html';
+    window.location.href = 'index.html';
 }
