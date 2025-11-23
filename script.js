@@ -59,7 +59,7 @@ function cargarUsuario() {
     const usuario = JSON.parse(localStorage.getItem('usuarioCespt'));
     
     if (!usuario) {
-        window.location.href = 'Pagina-login.html';
+        window.location.href = 'index.html';
         return;
     }
 
