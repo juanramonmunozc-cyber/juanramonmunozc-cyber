@@ -1524,11 +1524,13 @@ let seccionActual = null;
 function determinarColorYParpadeo(dias, count, prioridad) {
   let color = 'blue';
   let parpadeo = false;
+  let esUrgente = false;
   
-  // Sistema de días tiene prioridad
+  // Sistema de días SOLO afecta el color y parpadeo, NO la prioridad
   if (dias >= 14) {
     color = 'red';
     parpadeo = true;
+    esUrgente = true;
   } else if (dias >= 7) {
     color = 'orange';
   } else {
@@ -1536,20 +1538,20 @@ function determinarColorYParpadeo(dias, count, prioridad) {
     color = getMarkerColor(count);
   }
   
-  return { color, parpadeo, prioridad };
+  console.log(`Visual: dias=${dias}, color=${color}, parpadeo=${parpadeo}, prioridad=${prioridad}`); // Para debug
+  return { color, parpadeo, prioridad, esUrgente };
 }
     /* ===== SISTEMA DE PRIORIDADES ===== */
 /**
- * FUNCIÓN: calcularPrioridad - CORREGIDA
- * PROPÓSITO: Calcular nivel de prioridad del reporte (1-3) basado principalmente en el tipo de problema
+ * FUNCIÓN: calcularPrioridad - CORREGIDA DEFINITIVAMENTE
+ * PROPÓSITO: Calcular nivel de prioridad del reporte (1-3) basado EXCLUSIVAMENTE en el tipo de problema
  * ENTRADA: Datos del reporte
  * SALIDA: Número de prioridad (1=baja, 2=media, 3=alta)
  */
 function calcularPrioridad(reporte) {
-  const dias = calcularDiasUTC(reporte.fechaCreacion);
   const tipo = reporte.description || '';
   
-  // Prioridad por tipo de problema - MÁS ESPECÍFICO
+  // Prioridad por tipo de problema - EXCLUSIVAMENTE
   const prioridadesPorTipo = {
     'Fuga de agua': 3,
     'Inundación': 3,
@@ -1587,14 +1589,10 @@ function calcularPrioridad(reporte) {
     }
   }
   
-  // ELIMINAR O MODERAR EL AUMENTO POR DÍAS
-  // Solo aumentar prioridad en casos extremos
-  if (dias >= 21 && prioridad < 3) {
-    prioridad = 3; // Solo después de 21 días se convierte en máxima prioridad
-  } else if (dias >= 14 && prioridad === 1) {
-    prioridad = 2; // Prioridades bajas pueden subir después de 14 días
-  }
+  // ¡ELIMINADO COMPLETAMENTE EL AUMENTO POR DÍAS!
+  // La prioridad ahora es FIJA basada solo en el tipo de problema
   
+  console.log(`Prioridad calculada para "${tipo}": ${prioridad}`); // Para debug
   return prioridad;
 }
 
@@ -2935,13 +2933,13 @@ function cargarHistorialActualizaciones(reporteId) {
   const fechaCreacionMs = rawData.fechaCreacion ? (rawData.fechaCreacion.toMillis ? rawData.fechaCreacion.toMillis() : rawData.fechaCreacion) : Date.now();
   const diasPasados = calcularDiasUTC(fechaCreacionMs);
   
-  // CALCULAR PRIORIDAD
+  // CALCULAR PRIORIDAD (esta se mantiene fija)
   const prioridad = calcularPrioridad(rawData);
   
-  // SISTEMA COMBINADO: días + agrupamiento (pasar prioridad)
-  const { color, parpadeo } = determinarColorYParpadeo(diasPasados, count, prioridad);
+  // Obtener información visual (color, parpadeo, y si es urgente)
+  const { color, parpadeo, esUrgente } = determinarColorYParpadeo(diasPasados, count, prioridad);
   
-  // Pasar la prioridad a createIcon
+  // Pasar la prioridad a createIcon (NO el color para el banderín)
   const icon = createIcon(color, prioridad);
   
   const marker = L.marker([lat, lng], { icon }).addTo(mapa);
@@ -2952,9 +2950,11 @@ function cargarHistorialActualizaciones(reporteId) {
   const streetEsc = escapeHtml(street || 'Calle desconocida, Tijuana');
   const descEsc = escapeHtml(descripcion || '');
 
-  // Calcular prioridad para el popup
+  // Calcular prioridad para el popup (SIEMPRE usar la prioridad calculada)
   const badgePrioridad = obtenerBadgePrioridad(prioridad);
-  const badgeUrgencia = obtenerBadgeUrgencia(diasPasados);
+  
+  // MOSTRAR BADGE DE URGENCIA SOLO SI ES URGENTE
+  const badgeUrgencia = esUrgente ? '<span class="badge-urgencia"><i class="fas fa-bell"></i> URGENTE</span>' : '';
 
   const popupHtml = `
     <div style="min-width: 280px;">
@@ -2968,7 +2968,7 @@ function cargarHistorialActualizaciones(reporteId) {
       
       <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
         ${badgePrioridad}
-        ${badgeUrgencia}
+        ${badgeUrgencia} <!-- ← Esto solo se muestra si esUrgente es true -->
         <span class="estado-badge estado-${rawData.status || 'pendiente'}">${rawData.status || 'pendiente'}</span>
       </div>
       
@@ -2991,7 +2991,7 @@ function cargarHistorialActualizaciones(reporteId) {
 
   marker.bindPopup(popupHtml);
 
-  // EFECTO DE PARPADEO CORREGIDO - mantener la prioridad
+  // EFECTO DE PARPADEO (manteniendo la prioridad en el banderín)
   if (parpadeo) {
     let visible = true;
     const intervalo = setInterval(() => {
@@ -3005,6 +3005,8 @@ function cargarHistorialActualizaciones(reporteId) {
       }
     }, 500);
   }
+
+  
 
   // doble click para eliminar (solo para pruebas)
   // DOBLE CLICK PARA ELIMINAR - SOLO PARA ADMINISTRADORES
