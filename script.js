@@ -1,19 +1,17 @@
 // Configuración de Firebase
 const firebaseConfig = {
-      apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
-      authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
-      databaseURL: "https://mapa-de-quejas-e5354-default-rtdb.firebaseio.com",
-      projectId: "mapa-de-quejas-e5354",
-      storageBucket: "mapa-de-quejas-e5354.appspot.com",
-      messagingSenderId: "1098104212670",
-      appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef",
-      measurementId: "G-XJ015E8YWX"
-    };
+    apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
+    authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
+    databaseURL: "https://mapa-de-quejas-e5354-default-rtdb.firebaseio.com",
+    projectId: "mapa-de-quejas-e5354",
+    storageBucket: "mapa-de-quejas-e5354.appspot.com",
+    messagingSenderId: "1098104212670",
+    appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef"
+};
 
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+const database = firebase.database();
 
 // Manejar el formulario de login
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -21,14 +19,14 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     
     // Obtener datos del formulario
     const formData = {
+        clave: document.getElementById('clave').value,
         numero_servicio: document.getElementById('numero_servicio').value,
         telefono: document.getElementById('telefono').value,
         email: document.getElementById('email').value,
-        numero_medidor: document.getElementById('numero_medidor').value,
-        clave: document.getElementById('clave').value // Campo nuevo para la clave
+        numero_medidor: document.getElementById('numero_medidor').value
     };
 
-    // Validaciones
+    // Validaciones básicas
     if (!validarNumeroServicio(formData.numero_servicio)) {
         alert('❌ El número de servicio debe tener 8-10 dígitos');
         return;
@@ -50,32 +48,47 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     }
 
     try {
-        // Buscar usuario en Firestore por clave y número de servicio
-        const usersRef = db.collection('usuarios');
-        const querySnapshot = await usersRef
-            .where('clave', '==', formData.clave)
-            .where('numero_servicio', '==', formData.numero_servicio)
-            .get();
+        // Buscar usuario en la base de datos
+        const usuariosRef = database.ref('usuarios');
+        const snapshot = await usuariosRef.once('value');
+        const usuarios = snapshot.val();
 
-        if (querySnapshot.empty) {
-            alert('❌ Clave o número de servicio incorrectos');
+        if (!usuarios) {
+            alert('❌ No hay usuarios registrados en el sistema');
             return;
         }
 
-        // Obtener datos del usuario
-        let usuarioData;
-        querySnapshot.forEach(doc => {
-            usuarioData = { id: doc.id, ...doc.data() };
+        // Buscar usuario que coincida con los datos
+        let usuarioEncontrado = null;
+        let usuarioId = null;
+
+        Object.keys(usuarios).forEach(key => {
+            const usuario = usuarios[key];
+            if (usuario.clave === formData.clave && 
+                usuario.numero_servicio === formData.numero_servicio && 
+                usuario.telefono === formData.telefono) {
+                usuarioEncontrado = usuario;
+                usuarioId = key;
+            }
         });
+
+        if (!usuarioEncontrado) {
+            alert('❌ Clave, número de servicio o teléfono incorrectos');
+            return;
+        }
 
         // Generar folio y guardar datos
         formData.folio = generarFolio();
         formData.fecha = new Date().toLocaleString();
-        formData.nombre = usuarioData.nombre;
+        formData.nombre = usuarioEncontrado.nombre;
+        formData.direccion = usuarioEncontrado.direccion;
+        formData.userId = usuarioId;
         
         // Guardar en localStorage
         localStorage.setItem('usuarioCespt', JSON.stringify(formData));
-        localStorage.setItem('userName', usuarioData.nombre);
+        localStorage.setItem('userName', usuarioEncontrado.nombre);
+        
+        alert(`✅ ¡Bienvenido ${usuarioEncontrado.nombre}!`);
         
         // Redirigir al dashboard
         window.location.href = 'dashboard.html';
@@ -115,24 +128,36 @@ function cargarUsuario() {
 
     // Mostrar mensaje de bienvenida personalizado
     if (userName) {
-        document.getElementById('welcomeMessage').textContent = `Bienvenido, ${userName}`;
+        const welcomeElement = document.getElementById('welcomeMessage');
+        if (welcomeElement) {
+            welcomeElement.textContent = `Bienvenido, ${userName}`;
+        }
     }
 
-    // Mostrar información del usuario
-    document.getElementById('userService').textContent = usuario.numero_servicio;
-    document.getElementById('userPhone').textContent = usuario.telefono;
-    document.getElementById('userFolio').textContent = usuario.folio;
-    
-    if (usuario.email) {
-        document.getElementById('userEmail').textContent = usuario.email;
-    } else {
-        document.getElementById('emailRow').style.display = 'none';
-    }
-    
-    if (usuario.numero_medidor) {
-        document.getElementById('userMedidor').textContent = usuario.numero_medidor;
-    } else {
-        document.getElementById('medidorRow').style.display = 'none';
+    // Mostrar información del usuario (si existe en el dashboard)
+    if (document.getElementById('userService')) {
+        document.getElementById('userService').textContent = usuario.numero_servicio;
+        document.getElementById('userPhone').textContent = usuario.telefono;
+        document.getElementById('userFolio').textContent = usuario.folio;
+        
+        if (usuario.email) {
+            document.getElementById('userEmail').textContent = usuario.email;
+        } else {
+            const emailRow = document.getElementById('emailRow');
+            if (emailRow) emailRow.style.display = 'none';
+        }
+        
+        if (usuario.numero_medidor) {
+            document.getElementById('userMedidor').textContent = usuario.numero_medidor;
+        } else {
+            const medidorRow = document.getElementById('medidorRow');
+            if (medidorRow) medidorRow.style.display = 'none';
+        }
+
+        // Mostrar dirección si existe
+        if (usuario.direccion && document.getElementById('userDireccion')) {
+            document.getElementById('userDireccion').textContent = usuario.direccion;
+        }
     }
 }
 
@@ -161,7 +186,9 @@ function crearReporte() {
         descripcion,
         ubicacion,
         fecha: new Date().toLocaleString(),
-        estatus: 'Pendiente'
+        estatus: 'Pendiente',
+        usuario: usuario.nombre,
+        numero_servicio: usuario.numero_servicio
     };
     
     let reportes = JSON.parse(localStorage.getItem('reportesCespt') || '[]');
