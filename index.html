@@ -4,88 +4,306 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CESPT - Iniciar Sesión</title>
-    <link rel="stylesheet" href="styles.css">
+
+    <!-- Fuente moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #f4f4f4;
+            color: #333;
+        }
+
+        /* Barra superior */
+        .topbar {
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(to right, #7c002a, #7c002a, #7c002a);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+        .barraabajojejej {
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(to right, #7c002a, #7c002a, #7c002a);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+
+        /* Línea decorativa superior */
+        .decor-line {
+            width:100%;
+            height:4px;
+            background:linear-gradient(90deg,#7c002a,#b5003f);
+        }
+
+        /* Contenedor */
+        .container {
+            display: flex;
+            justify-content: center;
+            padding: 50px 20px;
+        }
+
+        /* Tarjeta */
+        .login-card {
+            background: white;
+            width: 100%;
+            max-width: 480px;
+            padding: 35px;
+            border-radius: 14px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Logo */
+        .logo {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .logo h1 {
+            font-size: 34px;
+            font-weight: 700;
+            color: #7c002a;
+        }
+
+        .logo p {
+            font-size: 14px;
+            color: #444;
+        }
+
+        .login-form h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #7c002a;
+            font-size: 22px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: 0.2s;
+        }
+
+        input:hover {
+            border-color: #a00035;
+        }
+
+        input:focus {
+            border-color: #7c002a;
+            outline: none;
+            box-shadow: 0 0 5px rgba(124, 0, 42, 0.4);
+            transform: scale(1.01);
+        }
+
+        small {
+            color: #666;
+            font-size: 12px;
+        }
+
+        /* Botón */
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #7c002a;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+
+        .btn-login:hover {
+            background: #a00035;
+            transform: scale(1.02);
+        }
+
+        /* Caja de información */
+        .info-box {
+            background: #fafafa;
+            border-left: 4px solid #7c002a;
+            padding: 12px 15px;
+            margin-top: 25px;
+            border-radius: 8px;
+        }
+
+        .info-box h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #7c002a;
+        }
+
+        .info-box ul {
+            padding-left: 20px;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 22px;
+            }
+            .logo h1 {
+                font-size: 28px;
+            }
+        }
+
+        .arribita {
+           width: 100%;
+          background: #6a0a24;
+          padding: 22px 0px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: 24px;
+          font-weight: 600;
+          color: #fff;
+          border-bottom: 4px solid #d41f5a;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.30);
+          letter-spacing: 0.3px;
+      }
+
+        /* abajito */
+        footer {
+            background:#7c002a;
+            color:white;
+            text-align:center;
+            padding:18px 10px;
+            margin-top:40px;
+            font-size:14px;
+        }
+    </style>
+
 </head>
+
 <body>
+
+    <header class="arribita">Centro de atención a quejas</header>
+ 
     <div class="container">
         <div class="login-card">
-            <!-- Logo CESPT -->
+
             <div class="logo">
-                <h1>🌊 CESPT</h1>
+                <h1>CESPT</h1>
                 <p>Comisión Estatal de Servicios Públicos de Tijuana</p>
             </div>
 
-            <!-- Formulario de Login -->
             <form id="loginForm" class="login-form">
-                <h2>🔐 Identificación</h2>
-                
+                <h2>Identificación</h2>
+
                 <div class="form-group">
-                    <label for="numero_servicio">📋 Número de Servicio *</label>
+                    <label for="numero_servicio">Número de Servicio *</label>
                     <input 
-                        type="text" 
-                        id="numero_servicio" 
-                        name="numero_servicio" 
+                        type="text"
+                        id="numero_servicio"
+                        name="numero_servicio"
                         placeholder="8-10 dígitos"
                         required
                         pattern="[0-9]{8,10}"
-                        title="8 a 10 dígitos"
                     >
                     <small>Encuéntralo en tu recibo de agua</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="telefono">📞 Teléfono *</label>
+                    <label for="telefono">Teléfono *</label>
                     <input 
-                        type="tel" 
-                        id="telefono" 
-                        name="telefono" 
-                        placeholder="10 dígitos"
+                        type="tel"
+                        id="telefono"
+                        name="telefono"
+                        placeholder="10 dígitos (Solo números)"
                         required
                         pattern="[0-9]{10}"
-                        title="10 dígitos"
                     >
-                </div>4
+                </div>
 
                 <div class="form-group">
-                    <label for="email">📧 Email (opcional)</label>
+                    <label for="email">Email (opcional)</label>
                     <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
+                        type="email"
+                        id="email"
+                        name="email"
                         placeholder="usuario@ejemplo.com"
                     >
                 </div>
 
                 <div class="form-group">
-                    <label for="numero_medidor">🔢 Número de Medidor (opcional)</label>
+                    <label for="numero_medidor">Número de Medidor (opcional)</label>
                     <input 
-                        type="text" 
-                        id="numero_medidor" 
-                        name="numero_medidor" 
+                        type="text"
+                        id="numero_medidor"
+                        name="numero_medidor"
                         placeholder="8 dígitos"
                         pattern="[0-9]{8}"
-                        title="8 dígitos"
                     >
                 </div>
 
-                <button type="submit" class="btn-login">
-                    🚀 Ingresar al Sistema
-                </button>
+                <button type="submit" class="btn-login">Ingresar al Sistema</button>
+
+                <!-- Estado de seguridad -->
+                <div style="
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    gap:8px;
+                    margin-top:15px;
+                    font-size:13px;
+                    color:#555;
+                ">
+                    <span style="width:10px;height:10px;background:#1ec31e;border-radius:50%;"></span>
+                    Conexión segura — Datos cifrados
+                </div>
 
                 <div class="info-box">
-                    <h3>📝 Información importante:</h3>
+                    <h3>Información importante:</h3>
                     <ul>
                         <li>Los campos con * son obligatorios</li>
                         <li>Se generará un folio automáticamente</li>
                         <li>Puede reportar fugas, falta de agua, etc.</li>
                     </ul>
                 </div>
+
+                <p style="text-align:center;margin-top:15px;font-size:12px;color:#777;">
+                    Última actualización del sistema: Noviembre 2025
+                </p>
+
             </form>
+
         </div>
     </div>
 
+    <footer>
+        © 2025 Comisión Estatal de Servicios Públicos de Tijuana — <br>
+        Atención Ciudadana y Reporte de Incidencias
+    </footer>
+
     <script src="script.js"></script>
+
 </body>
 </html>
-
-
