@@ -1,5 +1,22 @@
+// Configuración de Firebase
+const firebaseConfig = {
+      apiKey: "AIzaSyBKBEacMSzpEjh2Pd2zX-ij6EsDMxcb84M",
+      authDomain: "mapa-de-quejas-e5354.firebaseapp.com",
+      databaseURL: "https://mapa-de-quejas-e5354-default-rtdb.firebaseio.com",
+      projectId: "mapa-de-quejas-e5354",
+      storageBucket: "mapa-de-quejas-e5354.appspot.com",
+      messagingSenderId: "1098104212670",
+      appId: "1:1098104212670:web:fa91e20fb729dcd8be22ef",
+      measurementId: "G-XJ015E8YWX"
+    };
+
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
 // Manejar el formulario de login
-document.getElementById('loginForm').addEventListener('submit', function(e) {
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     // Obtener datos del formulario
@@ -7,7 +24,8 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
         numero_servicio: document.getElementById('numero_servicio').value,
         telefono: document.getElementById('telefono').value,
         email: document.getElementById('email').value,
-        numero_medidor: document.getElementById('numero_medidor').value
+        numero_medidor: document.getElementById('numero_medidor').value,
+        clave: document.getElementById('clave').value // Campo nuevo para la clave
     };
 
     // Validaciones
@@ -26,18 +44,49 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
         return;
     }
 
-    // Generar folio y guardar datos
-    formData.folio = generarFolio();
-    formData.fecha = new Date().toLocaleString();
-    
-    // Guardar en localStorage (simula base de datos)
-    localStorage.setItem('usuarioCespt', JSON.stringify(formData));
-    
-    // Redirigir al dashboard
-    window.location.href = 'dashboard.html';
+    if (!formData.clave) {
+        alert('❌ La clave es obligatoria');
+        return;
+    }
+
+    try {
+        // Buscar usuario en Firestore por clave y número de servicio
+        const usersRef = db.collection('usuarios');
+        const querySnapshot = await usersRef
+            .where('clave', '==', formData.clave)
+            .where('numero_servicio', '==', formData.numero_servicio)
+            .get();
+
+        if (querySnapshot.empty) {
+            alert('❌ Clave o número de servicio incorrectos');
+            return;
+        }
+
+        // Obtener datos del usuario
+        let usuarioData;
+        querySnapshot.forEach(doc => {
+            usuarioData = { id: doc.id, ...doc.data() };
+        });
+
+        // Generar folio y guardar datos
+        formData.folio = generarFolio();
+        formData.fecha = new Date().toLocaleString();
+        formData.nombre = usuarioData.nombre;
+        
+        // Guardar en localStorage
+        localStorage.setItem('usuarioCespt', JSON.stringify(formData));
+        localStorage.setItem('userName', usuarioData.nombre);
+        
+        // Redirigir al dashboard
+        window.location.href = 'dashboard.html';
+        
+    } catch (error) {
+        console.error('Error al autenticar:', error);
+        alert('❌ Error al iniciar sesión. Intente nuevamente.');
+    }
 });
 
-// Funciones de validación
+// Funciones de validación (mantener las mismas)
 function validarNumeroServicio(numero) {
     return /^\d{8,10}$/.test(numero);
 }
@@ -57,10 +106,16 @@ function generarFolio() {
 // Cargar datos del usuario en el dashboard
 function cargarUsuario() {
     const usuario = JSON.parse(localStorage.getItem('usuarioCespt'));
+    const userName = localStorage.getItem('userName');
     
     if (!usuario) {
         window.location.href = 'index.html';
         return;
+    }
+
+    // Mostrar mensaje de bienvenida personalizado
+    if (userName) {
+        document.getElementById('welcomeMessage').textContent = `Bienvenido, ${userName}`;
     }
 
     // Mostrar información del usuario
@@ -81,14 +136,11 @@ function cargarUsuario() {
     }
 }
 
-// Sistema de reportes
+// Sistema de reportes (mantener igual)
 function mostrarSeccion(seccionId) {
-    // Ocultar todas las secciones
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.add('hidden');
     });
-    
-    // Mostrar la sección seleccionada
     document.getElementById(seccionId).classList.remove('hidden');
 }
 
@@ -112,18 +164,16 @@ function crearReporte() {
         estatus: 'Pendiente'
     };
     
-    // Guardar reporte (en una app real, esto iría a una base de datos)
     let reportes = JSON.parse(localStorage.getItem('reportesCespt') || '[]');
     reportes.push(reporte);
     localStorage.setItem('reportesCespt', JSON.stringify(reportes));
     
     alert(`✅ Reporte creado exitosamente!\nFolio: ${usuario.folio}`);
-    
-    // Limpiar formulario
     document.getElementById('reportForm').reset();
 }
 
 function cerrarSesion() {
     localStorage.removeItem('usuarioCespt');
+    localStorage.removeItem('userName');
     window.location.href = 'index.html';
 }
